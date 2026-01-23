@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BGA Assistant - Inställningar</title>
+  <style>
+    body {
+      width: 350px;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+    }
+    
+    .container {
+      padding: 20px;
+    }
+    
+    .header {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      margin: 0 0 5px 0;
+      font-size: 20px;
+      color: #fff;
+    }
+    
+    .header .version {
+      font-size: 12px;
+      color: #999;
+    }
+    
+    .section {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin: 0 0 12px 0;
+    }
+    
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .setting-item:last-child {
+      border-bottom: none;
+    }
+    
+    .setting-label {
+      font-size: 13px;
+      color: #e0e0e0;
+    }
+    
+    .setting-description {
+      font-size: 11px;
+      color: #999;
+      margin-top: 2px;
+    }
+    
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: #4fc3f7;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    
+    /* Game List */
+    .game-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .game-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .game-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    
+    .game-item label {
+      font-size: 13px;
+      cursor: pointer;
+      flex: 1;
+    }
+    
+    .game-status {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+    }
+    
+    .game-status.coming-soon {
+      background: rgba(255, 152, 0, 0.2);
+      color: #ff9800;
+    }
+    
+    /* Buttons */
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-primary {
+      background: #4fc3f7;
+      color: #1a1a2e;
+    }
+    
+    .btn-primary:hover {
+      background: #29b6f6;
+    }
+    
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e0e0e0;
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    
+    /* Status Message */
+    .status-message {
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 16px;
+      display: none;
+    }
+    
+    .status-message.success {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+      border: 1px solid #4caf50;
+      display: block;
+    }
+    
+    .status-message.error {
+      background: rgba(244, 67, 54, 0.2);
+      color: #f44336;
+      border: 1px solid #f44336;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🎮 BGA Assistant</h1>
+      <div class="version">Version 1.0.0</div>
+    </div>
+    
+    <!-- General Settings -->
+    <div class="section">
+      <h2 class="section-title">Allmänna Inställningar</h2>
+      
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">Auto-detektera spel</div>
+          <div class="setting-description">Upptäck spel automatiskt från WebSocket</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="autoDetectGame" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">Visa opponent-analys</div>
+          <div class="setting-description">Analysera motståndares spelstil</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="showOpponentAnalysis" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">Training Mode</div>
+          <div class="setting-description">Logga WebSocket för nya spel-templates</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="trainingMode">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+    
+    <!-- Enabled Games -->
+    <div class="section">
+      <h2 class="section-title">Aktiverade Spel</h2>
+      
+      <div class="game-list">
+        <div class="game-item">
+          <input type="checkbox" id="game-sushigo" value="sushigo" checked>
+          <label for="game-sushigo">Sushi Go</label>
+          <span class="game-status">Aktiv</span>
+        </div>
+        
+        <div class="game-item">
+          <input type="checkbox" id="game-tickettoride" value="tickettoride" checked>
+          <label for="game-tickettoride">Ticket to Ride</label>
+          <span class="game-status">Aktiv</span>
+        </div>
+        
+        <div class="game-item">
+          <input type="checkbox" id="game-wingspan" value="wingspan" checked>
+          <label for="game-wingspan">Wingspan</label>
+          <span class="game-status">Aktiv</span>
+        </div>
+        
+        <div class="game-item">
+          <input type="checkbox" id="game-7wonders" value="7wonders" disabled>
+          <label for="game-7wonders">7 Wonders</label>
+          <span class="game-status coming-soon">Kommer snart</span>
+        </div>
+        
+        <div class="game-item">
+          <input type="checkbox" id="game-splendor" value="splendor" disabled>
+          <label for="game-splendor">Splendor</label>
+          <span class="game-status coming-soon">Kommer snart</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="button-group">
+      <button class="btn btn-primary" id="saveBtn">Spara</button>
+      <button class="btn btn-secondary" id="resetBtn">Återställ</button>
+    </div>
+    
+    <!-- Status Message -->
+    <div class="status-message" id="statusMessage"></div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

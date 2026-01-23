@@ -1,0 +1,129 @@
+{
+  "gameId": "azul",
+  "version": "1.0.0",
+
+  "detectors": {
+    "color_focus": {
+      "description": "Tracks if opponent is focusing on specific colors",
+      "signals": [
+        { "pattern": "takes_same_color_repeatedly", "weight": 0.8 },
+        { "pattern": "wall_has_4_of_color", "weight": 0.9 },
+        { "pattern": "ignores_other_colors", "weight": 0.6 }
+      ],
+      "threshold": 0.7
+    },
+    "row_rusher": {
+      "description": "Opponent trying to complete rows quickly",
+      "signals": [
+        { "pattern": "fills_small_pattern_lines", "weight": 0.7 },
+        { "pattern": "wall_row_nearly_complete", "weight": 0.9 },
+        { "pattern": "takes_any_color_for_row", "weight": 0.6 }
+      ],
+      "threshold": 0.65
+    },
+    "column_builder": {
+      "description": "Building vertical columns for +7 bonus",
+      "signals": [
+        { "pattern": "wall_column_3_plus", "weight": 0.8 },
+        { "pattern": "prioritizes_column_tiles", "weight": 0.7 },
+        { "pattern": "multiple_columns_started", "weight": 0.5 }
+      ],
+      "threshold": 0.7
+    },
+    "aggressive_blocker": {
+      "description": "Takes tiles to deny others",
+      "signals": [
+        { "pattern": "takes_tiles_cant_use", "weight": 0.8 },
+        { "pattern": "watches_opponent_boards", "weight": 0.6 },
+        { "pattern": "floor_tiles_high", "weight": 0.5 }
+      ],
+      "threshold": 0.6
+    },
+    "first_player_seeker": {
+      "description": "Strategically takes first player token",
+      "signals": [
+        { "pattern": "takes_center_early", "weight": 0.7 },
+        { "pattern": "values_turn_order", "weight": 0.6 },
+        { "pattern": "accepts_small_penalty", "weight": 0.5 }
+      ],
+      "threshold": 0.6
+    }
+  },
+
+  "strategies": {
+    "color_completion": {
+      "name": "Color Completionist",
+      "description": "Focusing on completing all 5 of specific colors for +10 bonus",
+      "detectors": ["color_focus"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "deny_target_color",
+        "message": "Block their target color - they're going for +10 color bonus!",
+        "priority": 85
+      }
+    },
+    "speed_row": {
+      "name": "Row Rusher",
+      "description": "Trying to complete rows quickly to end game",
+      "detectors": ["row_rusher"],
+      "threat_level": "CRITICAL",
+      "counter_strategy": {
+        "action": "race_or_block",
+        "message": "Opponent rushing rows! Race to complete yours or block their colors.",
+        "priority": 90
+      }
+    },
+    "column_master": {
+      "name": "Column Builder",
+      "description": "Building columns for +7 bonuses",
+      "detectors": ["column_builder"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "deny_column_tiles",
+        "message": "Watch their column progress - deny tiles that complete columns.",
+        "priority": 75
+      }
+    },
+    "hate_drafter": {
+      "name": "Hate Drafter",
+      "description": "Taking tiles specifically to deny opponents",
+      "detectors": ["aggressive_blocker"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "diversify_options",
+        "message": "Opponent is hate drafting - keep multiple color options open.",
+        "priority": 70
+      }
+    },
+    "tempo_control": {
+      "name": "Tempo Controller",
+      "description": "Controlling turn order with first player token",
+      "detectors": ["first_player_seeker"],
+      "threat_level": "LOW",
+      "counter_strategy": {
+        "action": "contest_first_player",
+        "message": "Consider contesting first player if turn order matters.",
+        "priority": 60
+      }
+    }
+  },
+
+  "threat_assessment": {
+    "CRITICAL": {
+      "indicators": ["near_row_completion", "4_of_color_on_wall", "high_score_lead"],
+      "response": "Immediate blocking required"
+    },
+    "HIGH": {
+      "indicators": ["3_of_color_on_wall", "multiple_bonuses_possible"],
+      "response": "Active denial recommended"
+    },
+    "MEDIUM": {
+      "indicators": ["building_columns", "hate_drafting"],
+      "response": "Monitor and adapt"
+    },
+    "LOW": {
+      "indicators": ["scattered_wall", "floor_penalties"],
+      "response": "Focus on own strategy"
+    }
+  }
+}

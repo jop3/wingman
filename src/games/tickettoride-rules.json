@@ -1,0 +1,386 @@
+{
+  "gameId": "tickettoride",
+  "gameName": "Ticket to Ride",
+  "version": "1.0.0",
+
+  "constants": {
+    "starting_trains": 45,
+    "endgame_threshold": 2,
+    "longest_route_bonus": 10,
+    "route_points": {
+      "1": 1, "2": 2, "3": 4, "4": 7, "5": 10, "6": 15
+    }
+  },
+
+  "trackers": {
+    "trains_remaining": {
+      "type": "counter",
+      "initial": 45,
+      "description": "Trains remaining to place"
+    },
+    "cards_in_hand": {
+      "type": "counter",
+      "initial": 4,
+      "description": "Train cards in hand"
+    },
+    "destinations_completed": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Completed destination tickets"
+    },
+    "destinations_incomplete": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Incomplete destination tickets"
+    },
+    "longest_route_length": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Length of your longest continuous route"
+    },
+    "total_route_points": {
+      "type": "cumulative",
+      "description": "Points from claimed routes"
+    }
+  },
+
+  "rules": [
+    {
+      "id": "endgame_warning_critical",
+      "priority": 100,
+      "conditions": {
+        "or": [
+          { "tracker.trains_remaining.value": { "lessThanOrEqual": 5 } },
+          { "opponent.min_trains": { "lessThanOrEqual": 5 } }
+        ]
+      },
+      "action": {
+        "recommend": "prepare_endgame",
+        "message": "KRITISKT: Spelet närmar sig slutet! Slutför destinations NU!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "endgame_warning",
+      "priority": 90,
+      "conditions": {
+        "or": [
+          { "tracker.trains_remaining.value": { "lessThanOrEqual": 15 } },
+          { "opponent.min_trains": { "lessThanOrEqual": 15 } }
+        ]
+      },
+      "action": {
+        "recommend": "monitor_endgame",
+        "message": "Varning: Endgame närmar sig. Prioritera destinations före nya rutter.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "incomplete_destination_risk",
+      "priority": 95,
+      "conditions": {
+        "and": [
+          { "tracker.destinations_incomplete.value": { "greaterThan": 0 } },
+          { "tracker.trains_remaining.value": { "lessThanOrEqual": 20 } }
+        ]
+      },
+      "action": {
+        "recommend": "complete_destinations",
+        "message": "Du har ofullständiga destinations! Slutför dem innan spelet tar slut.",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "draw_new_destinations_early",
+      "priority": 60,
+      "conditions": {
+        "and": [
+          { "tracker.trains_remaining.value": { "greaterThan": 35 } },
+          { "tracker.destinations_completed.value": { "greaterThan": 0 } }
+        ]
+      },
+      "action": {
+        "recommend": "consider_new_destinations",
+        "message": "Bra tid att dra nya destinations - du har många tåg kvar",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "long_route_priority",
+      "priority": 75,
+      "conditions": {
+        "and": [
+          { "available_route.length": { "greaterThanOrEqual": 5 } },
+          { "can_claim": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "claim_long_route",
+        "message": "Lång rutt tillgänglig (5+ tåg)! Högt poängvärde.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "longest_route_competition",
+      "priority": 80,
+      "conditions": {
+        "and": [
+          { "tracker.longest_route_length.value": { "greaterThanOrEqual": 15 } },
+          { "opponent.longest_route": { "greaterThanOrEqual": "tracker.longest_route_length.value" } }
+        ]
+      },
+      "action": {
+        "recommend": "extend_route",
+        "message": "Tävla om längsta rutten! +10 bonus på spel. Förläng din rutt.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "block_bottleneck",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "route.is_bottleneck": { "equals": true } },
+          { "opponent.likely_needs": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "block_route",
+        "message": "Blockera flaskhals! Denna rutt är kritisk för motståndare.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "color_hoarding_detected",
+      "priority": 70,
+      "conditions": {
+        "and": [
+          { "hand.single_color_count": { "greaterThanOrEqual": 6 } },
+          { "can_claim_with_color": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "use_hoarded_cards",
+        "message": "Du har många kort av samma färg - använd dem för en rutt!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "locomotive_efficiency",
+      "priority": 65,
+      "conditions": {
+        "and": [
+          { "hand.locomotive_count": { "greaterThanOrEqual": 3 } },
+          { "available_route.needs_specific_color": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "use_locomotives",
+        "message": "Använd lokomotiv för att komplettera färgbrist",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "avoid_taking_visible_locomotive",
+      "priority": 55,
+      "conditions": {
+        "and": [
+          { "visible_cards.has_locomotive": { "equals": true } },
+          { "hand.locomotive_count": { "greaterThanOrEqual": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "skip_locomotive",
+        "message": "Du har redan lokomotiv. Ta färgkort istället (2 st vs 1 lok)",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "station_usage_europe",
+      "priority": 88,
+      "conditions": {
+        "and": [
+          { "variant": { "equals": "europe" } },
+          { "route.blocked_critical": { "equals": true } },
+          { "stations_remaining": { "greaterThan": 0 } }
+        ]
+      },
+      "action": {
+        "recommend": "use_station",
+        "message": "Kritisk rutt blockerad! Använd station för att ansluta.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "save_stations",
+      "priority": 72,
+      "conditions": {
+        "and": [
+          { "variant": { "equals": "europe" } },
+          { "stations_remaining": { "equals": 3 } },
+          { "tracker.trains_remaining.value": { "greaterThan": 25 } }
+        ]
+      },
+      "action": {
+        "recommend": "save_stations",
+        "message": "Spara stationer tills du verkligen behöver dem (-4p per oanvänd)",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "tunnel_risk",
+      "priority": 68,
+      "conditions": {
+        "and": [
+          { "variant": { "equals": "europe" } },
+          { "route.is_tunnel": { "equals": true } },
+          { "hand.matching_cards": { "lessThan": 5 } }
+        ]
+      },
+      "action": {
+        "recommend": "tunnel_caution",
+        "message": "Tunnel! Se till att du har extrakort ifall du drar otur.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "ferry_preparation",
+      "priority": 66,
+      "conditions": {
+        "and": [
+          { "route.is_ferry": { "equals": true } },
+          { "hand.locomotive_count": { "lessThan": "route.locomotive_requirement" } }
+        ]
+      },
+      "action": {
+        "recommend": "get_locomotives",
+        "message": "Färja kräver lokomotiv! Samla fler innan du försöker.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "opponent_color_tracking",
+      "priority": 78,
+      "conditions": {
+        "and": [
+          { "opponent.drawing_visible": { "equals": true } },
+          { "opponent.color_pattern": { "greaterThanOrEqual": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "watch_opponent",
+        "message": "Motståndare samlar specifik färg - de planerar troligen en rutt!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "rush_strategy_counter",
+      "priority": 92,
+      "conditions": {
+        "and": [
+          { "opponent.trains_remaining": { "lessThan": 20 } },
+          { "opponent.building_rapidly": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "prepare_for_rush",
+        "message": "VARNING: Motståndare rushar! Slutför dina destinations omedelbart.",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "efficient_routing",
+      "priority": 62,
+      "conditions": {
+        "and": [
+          { "destinations.overlap_possible": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "overlap_routes",
+        "message": "Bygg rutter som hjälper flera destinations samtidigt",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "avoid_greedy_destinations",
+      "priority": 58,
+      "conditions": {
+        "and": [
+          { "tracker.trains_remaining.value": { "lessThan": 25 } },
+          { "new_destination.train_cost": { "greaterThan": "tracker.trains_remaining.value" } }
+        ]
+      },
+      "action": {
+        "recommend": "skip_new_destinations",
+        "message": "Inte tillräckligt med tåg för nya långa destinations. Spela säkert.",
+        "alertLevel": "medium"
+      }
+    }
+  ],
+
+  "bottleneckRoutes": {
+    "usa": [
+      { "from": "Las Vegas", "to": "Los Angeles" },
+      { "from": "Phoenix", "to": "Santa Fe" },
+      { "from": "Calgary", "to": "Seattle" },
+      { "from": "Winnipeg", "to": "Duluth" },
+      { "from": "El Paso", "to": "Houston" }
+    ],
+    "europe": [
+      { "from": "Zürich", "to": "Wien" },
+      { "from": "Venezia", "to": "Zagreb" },
+      { "from": "Sarajevo", "to": "Sofia" }
+    ]
+  },
+
+  "keyCities": {
+    "usa": ["Chicago", "Denver", "New York", "Los Angeles", "Seattle", "Miami", "Atlanta"],
+    "europe": ["Paris", "Berlin", "Wien", "Budapest", "Roma", "Moskva", "Barcelona"]
+  },
+
+  "commonMistakes": [
+    {
+      "mistake": "Dra nya destinations sent i spelet",
+      "why_bad": "Risk för ofullständiga tickets = negativa poäng",
+      "fix": "Dra destinations endast om du har 25+ tåg kvar"
+    },
+    {
+      "mistake": "Ignorera motståndares tågräkning",
+      "why_bad": "Blir överraskad när spelet slutar",
+      "fix": "Kolla alltid hur många tåg motståndare har kvar"
+    },
+    {
+      "mistake": "Ta synlig lokomotiv istället för 2 kort",
+      "why_bad": "1 lok vs 2 färgkort - oftast sämre deal",
+      "fix": "Ta lok endast om du verkligen behöver den för färja/tunnel"
+    },
+    {
+      "mistake": "Bygga för synligt",
+      "why_bad": "Motståndare ser dina destinations och blockerar",
+      "fix": "Bygg från mitten utåt, inte ändpunkt till ändpunkt"
+    },
+    {
+      "mistake": "Använda stationer tidigt (Europe)",
+      "why_bad": "Kan behövas för kritisk blockering senare",
+      "fix": "Spara stationer till absolut nödfall"
+    }
+  ]
+}

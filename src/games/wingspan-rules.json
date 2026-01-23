@@ -1,0 +1,522 @@
+{
+  "gameId": "wingspan",
+  "gameName": "Wingspan",
+  "version": "1.0.0",
+  
+  "constants": {
+    "max_rounds": 4,
+    "actions_per_round": [8, 7, 6, 5],
+    "habitats": ["forest", "grassland", "wetland"],
+    "nest_types": ["bowl", "cavity", "platform", "ground", "wild"],
+    "max_cached_food_value": 1
+  },
+  
+  "trackers": {
+    "current_round": {
+      "type": "counter",
+      "initial": 1,
+      "description": "Aktuell runda (1-4)"
+    },
+    
+    "actions_remaining": {
+      "type": "counter",
+      "initial": 8,
+      "description": "Återstående actions denna runda"
+    },
+    
+    "birds_played": {
+      "type": "list",
+      "description": "Lista över spelade fåglar"
+    },
+    
+    "cached_food_total": {
+      "type": "cumulative",
+      "description": "Total cachad mat (1p per)"
+    },
+    
+    "tucked_cards_total": {
+      "type": "cumulative",
+      "description": "Total tuckade kort (1p per)"
+    },
+    
+    "eggs_on_birds": {
+      "type": "cumulative",
+      "description": "Totalt antal ägg på fåglar (1p per)"
+    },
+    
+    "when_activated_powers": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Antal when-activated powers i din motor"
+    },
+    
+    "forest_birds": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Fåglar i forest habitat"
+    },
+    
+    "grassland_birds": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Fåglar i grassland habitat"
+    },
+    
+    "wetland_birds": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Fåglar i wetland habitat"
+    }
+  },
+  
+  "rules": [
+    {
+      "id": "round1_engine_foundation",
+      "priority": 90,
+      "phase": "round1",
+      "conditions": {
+        "tracker.current_round.value": { "equals": 1 }
+      },
+      "action": {
+        "recommend": "play_when_activated_birds",
+        "message": "Runda 1: Prioritera when-activated powers - bygger motor-foundation",
+        "alertLevel": "high"
+      }
+    },
+    
+    {
+      "id": "round1_avoid_expensive",
+      "priority": 85,
+      "phase": "round1",
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "equals": 1 } },
+          { "bird.food_cost": { "greaterThan": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "save_for_later",
+        "message": "Undvik dyra fåglar (3+ mat) i runda 1 - behöver bygga motor",
+        "alertLevel": "medium"
+      }
+    },
+    
+    {
+      "id": "chipmunk_priority",
+      "priority": 95,
+      "conditions": {
+        "and": [
+          { "available_bird.name": { "equals": "Chipmunk" } },
+          { "tracker.current_round.value": { "lessThan": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "take_chipmunk_immediately",
+        "message": "KRITISKT: Ta Chipmunk om tillgänglig - kraftfullaste tucking-motorn",
+        "alertLevel": "critical"
+      }
+    },
+    
+    {
+      "id": "franklins_gull_priority",
+      "priority": 92,
+      "conditions": {
+        "and": [
+          { "available_bird.name": { "equals": "Franklin's Gull" } },
+          { "tracker.current_round.value": { "lessThan": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "take_franklins_gull",
+        "message": "Ta Franklin's Gull - perfekt tucking-motor",
+        "alertLevel": "high"
+      }
+    },
+    
+    {
+      "id": "platform_nest_for_eggs",
+      "priority": 75,
+      "conditions": {
+        "and": [
+          { "bird.nest_type": { "equals": "platform" } },
+          { "strategy.focus": { "equals": "eggs" } }
+        ]
+      },
+      "action": {
+        "recommend": "prioritize_platform_nests",
+        "message": "Platform nests lägger flest ägg - perfekt för ägg-strategi",
+        "alertLevel": "medium"
+      }
+    },
+    
+    {
+      "id": "raven_counter_warning",
+      "priority": 88,
+      "conditions": {
+        "and": [
+          { "opponent.has_raven": { "equals": true } },
+          { "tracker.cached_food_total.value": { "greaterThan": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "use_cached_food",
+        "message": "VARNING: Motståndare har raven - använd cachad mat innan den stjäls!",
+        "alertLevel": "high"
+      }
+    },
+    
+    {
+      "id": "predator_counter",
+      "priority": 80,
+      "conditions": {
+        "and": [
+          { "opponent.has_predator": { "equals": true } },
+          { "tracker.eggs_on_birds.value": { "greaterThan": 8 } }
+        ]
+      },
+      "action": {
+        "recommend": "minimize_egg_exposure",
+        "message": "Motståndare har predators - använd ägg för fåglar istället för att samla",
+        "alertLevel": "medium"
+      }
+    },
+    
+    {
+      "id": "round4_maximize_actions",
+      "priority": 100,
+      "phase": "round4",
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "equals": 4 } },
+          { "tracker.when_activated_powers.value": { "greaterThan": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "exploit_engine",
+        "message": "Runda 4: Exploatera din motor - använd when-activated powers maximalt",
+        "alertLevel": "critical"
+      },
+      "calculate": {
+        "estimated_points": {
+          "expression": "{tracker.when_activated_powers.value} * 2 + 5",
+          "description": "Uppskattad poäng från motor i runda 4"
+        }
+      }
+    },
+    
+    {
+      "id": "tuck_efficiency_round3_4",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "greaterThanOrEqual": 3 } },
+          { "available_action": { "equals": "tuck_card" } }
+        ]
+      },
+      "action": {
+        "recommend": "tuck_aggressively",
+        "message": "Runda 3-4: Tucka aggressivt om du har motor (1p per kort)",
+        "alertLevel": "high"
+      }
+    },
+    
+    {
+      "id": "cache_food_value",
+      "priority": 70,
+      "conditions": {
+        "available_action": { "equals": "cache_food" }
+      },
+      "action": {
+        "recommend": "cache_when_possible",
+        "message": "Cacha mat på fåglar när möjligt (1p per mat)",
+        "alertLevel": "medium"
+      }
+    },
+    
+    {
+      "id": "habitat_balance",
+      "priority": 65,
+      "conditions": {
+        "and": [
+          { "tracker.forest_birds.value": { "lessThan": 2 } },
+          { "tracker.grassland_birds.value": { "lessThan": 2 } },
+          { "tracker.wetland_birds.value": { "lessThan": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "balance_habitats",
+        "message": "Balansera habitat - viktigt för bonuskort och flexibilitet",
+        "alertLevel": "low"
+      }
+    },
+    
+    {
+      "id": "bonus_card_synergy",
+      "priority": 78,
+      "conditions": {
+        "and": [
+          { "bonus_card.requirement": { "in": ["cavity_nest", "bowl_nest"] } },
+          { "available_bird.nest_type": { "in": ["cavity", "bowl"] } }
+        ]
+      },
+      "action": {
+        "recommend": "match_bonus_requirements",
+        "message": "Denna fågel matchar ditt bonuskort - extra värde!",
+        "alertLevel": "medium"
+      }
+    },
+    
+    {
+      "id": "endgame_egg_rush",
+      "priority": 90,
+      "phase": "round4",
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "equals": 4 } },
+          { "tracker.actions_remaining.value": { "lessThan": 3 } },
+          { "tracker.grassland_birds.value": { "greaterThan": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "lay_eggs_final_actions",
+        "message": "Sista actions: Använd grassland för massiv äggläggning",
+        "alertLevel": "high"
+      }
+    },
+    
+    {
+      "id": "draw_cards_when_dry",
+      "priority": 60,
+      "conditions": {
+        "and": [
+          { "hand.bird_cards": { "lessThan": 3 } },
+          { "tracker.current_round.value": { "lessThan": 4 } }
+        ]
+      },
+      "action": {
+        "recommend": "draw_birds",
+        "message": "Låg hand - dra fler kort för att ha options",
+        "alertLevel": "medium"
+      }
+    },
+    
+    {
+      "id": "avoid_overpriced_birds_late",
+      "priority": 72,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "greaterThanOrEqual": 3 } },
+          { "bird.food_cost": { "greaterThan": 3 } },
+          { "bird.points": { "lessThan": 5 } }
+        ]
+      },
+      "action": {
+        "recommend": "skip_inefficient_bird",
+        "message": "Sent i spelet: Undvik dyr fågel med låg point-value",
+        "alertLevel": "medium"
+      }
+    },
+    
+    {
+      "id": "when_played_powers_early",
+      "priority": 68,
+      "conditions": {
+        "and": [
+          { "bird.power_type": { "equals": "when_played" } },
+          { "tracker.current_round.value": { "lessThanOrEqual": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "deprioritize_when_played",
+        "message": "When-played powers har låg value - prioritera when-activated istället",
+        "alertLevel": "low"
+      }
+    },
+    
+    {
+      "id": "wetland_card_engine",
+      "priority": 82,
+      "conditions": {
+        "and": [
+          { "tracker.wetland_birds.value": { "greaterThan": 2 } },
+          { "available_action": { "equals": "draw_cards" } },
+          { "tracker.current_round.value": { "greaterThanOrEqual": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "use_wetland_for_cards",
+        "message": "Stark wetland-motor - använd för kortflöde till tucking",
+        "alertLevel": "medium"
+      }
+    },
+    
+    {
+      "id": "food_engine_forest",
+      "priority": 75,
+      "conditions": {
+        "and": [
+          { "tracker.forest_birds.value": { "greaterThan": 2 } },
+          { "food_needed": { "greaterThan": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "use_forest_for_food",
+        "message": "Använd forest-motor för matproduktion",
+        "alertLevel": "medium"
+      }
+    }
+  ],
+  
+  "roundStrategies": {
+    "round1": {
+      "focus": "Engine Foundation",
+      "priorities": [
+        "Spela when-activated birds",
+        "Undvik dyra fåglar (3+ mat)",
+        "Balansera habitat",
+        "Ta key birds (Chipmunk, Franklin's Gull)"
+      ],
+      "avoid": [
+        "When-played powers (låg långsiktig value)",
+        "Fokusera på ägg för tidigt",
+        "Spela dyra fåglar utan when-activated"
+      ]
+    },
+    
+    "round2": {
+      "focus": "Engine Building",
+      "priorities": [
+        "Fortsätt bygga when-activated motor",
+        "Börja generera resurser (mat, kort, ägg)",
+        "Ta platform nests om egg-strategi",
+        "Säkra key birds innan motståndare"
+      ],
+      "avoid": [
+        "Slösa actions på ineffektiva drag",
+        "Cacha för mycket mat om ravens i spel",
+        "Ignorera bonuskort-requirements"
+      ]
+    },
+    
+    "round3": {
+      "focus": "Engine Exploitation",
+      "priorities": [
+        "Börja exploatera when-activated powers",
+        "Tucka aggressivt om du har motor",
+        "Cacha mat för points",
+        "Lägg ägg om platform nests"
+      ],
+      "avoid": [
+        "Spela nya dyra fåglar (motorn viktigare)",
+        "Dra kort utan plan",
+        "Ignorera opponent threats"
+      ]
+    },
+    
+    "round4": {
+      "focus": "Maximum Points",
+      "priorities": [
+        "Exploatera motor maximalt (5 actions)",
+        "Tucka allt du kan",
+        "Lägg massiva ägg",
+        "Slutför bonuskort"
+      ],
+      "avoid": [
+        "Spela nya fåglar (för sent)",
+        "Slösa actions på ineffektiva moves",
+        "Glöm cacha mat om möjligt"
+      ]
+    }
+  },
+  
+  "birdSynergies": {
+    "tucking_engine": {
+      "keyBirds": ["Chipmunk", "Franklin's Gull", "Killdeer"],
+      "support": ["Any wetland card-drawers", "Ravens for food"],
+      "strategy": "Bygg wetland för kortflöde, tucka aggressivt från runda 2",
+      "expectedValue": "15-20 points from tucking alone"
+    },
+    
+    "egg_engine": {
+      "keyBirds": ["Killdeer", "American Goldfinch", "Great Crested Flycatcher"],
+      "support": ["Platform nest birds", "Food cachers"],
+      "strategy": "Spela platform nests, använd grassland repeatedly",
+      "expectedValue": "12-18 points from eggs"
+    },
+    
+    "food_converter": {
+      "keyBirds": ["Common Raven", "American Crow", "Any cache-on-play"],
+      "support": ["Forest activators", "Multiple food sources"],
+      "strategy": "Stjäl/samla mat, cacha på fåglar (1p per mat)",
+      "expectedValue": "8-12 points from cached food"
+    }
+  },
+  
+  "commonMistakes": [
+    {
+      "mistake": "Spela dyra fåglar i runda 1",
+      "why_bad": "Slösar actions som borde bygga motor",
+      "fix": "Prioritera billiga when-activated birds tidigt"
+    },
+    {
+      "mistake": "Ignorera when-activated powers",
+      "why_bad": "Missar exponentiell motor-growth",
+      "fix": "Minst 3-4 when-activated powers vid runda 3"
+    },
+    {
+      "mistake": "Cacha mat tidigt mot ravens",
+      "why_bad": "Ravens stjäl din cachade mat",
+      "fix": "Använd mat direkt eller vänta till runda 3"
+    },
+    {
+      "mistake": "Spela nya fåglar i runda 4",
+      "why_bad": "Runda 4 = exploatera motor, inte bygga ny",
+      "fix": "Använd alla 5 actions på habitat-aktivering"
+    },
+    {
+      "mistake": "Ignorera bonuskort",
+      "why_bad": "Lämnar 5-10 poäng på bordet",
+      "fix": "Välj fåglar som matchar bonuskort när möjligt"
+    },
+    {
+      "mistake": "För många when-played powers",
+      "why_bad": "When-played = one-time value, when-activated = repeating",
+      "fix": "Max 1-2 when-played, resten when-activated"
+    },
+    {
+      "mistake": "Obalanserade habitat",
+      "why_bad": "Begränsar flexibility och bonuskort-möjligheter",
+      "fix": "Minst 2 fåglar i varje habitat vid runda 3"
+    },
+    {
+      "mistake": "För många dyra fåglar",
+      "why_bad": "Färre fåglar = färre when-activated triggers",
+      "fix": "Mix: 2-3 dyra (5+ points), resten billiga engines"
+    }
+  ],
+  
+  "scoringOptimization": {
+    "target_breakdown": {
+      "bird_points": "25-35 points (8-10 birds @ 3-4p avg)",
+      "bonus_cards": "8-15 points (2 cards @ 4-7p each)",
+      "end_of_round_goals": "10-16 points (4 goals @ 2-4p each)",
+      "eggs_on_birds": "10-15 points (10-15 eggs)",
+      "cached_food": "5-10 points (5-10 cached food)",
+      "tucked_cards": "8-15 points (8-15 tucked)",
+      "total_target": "70-90+ points (competitive game)"
+    },
+    
+    "high_priority_points": [
+      "When-activated powers (exponential growth)",
+      "Tucking (1p per card, scales with motor)",
+      "Eggs on platform nests (grassland engine)",
+      "Bonus cards (5-7p each if matched)"
+    ],
+    
+    "low_priority_points": [
+      "Cached food (nice bonus, not primary)",
+      "Single when-played effects",
+      "High-cost birds without powers"
+    ]
+  }
+}

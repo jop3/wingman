@@ -1,0 +1,289 @@
+{
+  "gameId": "gnomehollow",
+  "gameName": "Gnome Hollow",
+  "version": "1.0.0",
+
+  "constants": {
+    "total_rounds": 8,
+    "seasons": ["spring", "summer", "fall", "winter"],
+    "starting_workers": 2,
+    "max_workers": 5
+  },
+
+  "trackers": {
+    "current_round": {
+      "type": "counter",
+      "initial": 1,
+      "description": "Current round"
+    },
+    "workers_available": {
+      "type": "counter",
+      "initial": 2,
+      "description": "Available workers to place"
+    },
+    "total_buildings": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Buildings constructed"
+    },
+    "mushrooms": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Mushroom resources"
+    },
+    "berries": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Berry resources"
+    },
+    "wood": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Wood resources"
+    },
+    "stone": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Stone resources"
+    },
+    "gold": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Gold resources"
+    }
+  },
+
+  "rules": [
+    {
+      "id": "worker_placement_priority",
+      "priority": 90,
+      "conditions": {
+        "and": [
+          { "tracker.workers_available.value": { "greaterThan": 0 } },
+          { "action.high_value": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "place_first",
+        "message": "Place worker on high-value action before opponents claim it!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "resource_engine_early",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "lessThanOrEqual": 3 } },
+          { "available_action.grants_ongoing_resource": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "build_engine",
+        "message": "Early game: Prioritize actions that give ongoing resource generation.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "building_construction",
+      "priority": 88,
+      "conditions": {
+        "and": [
+          { "resources.sufficient_for_building": { "equals": true } },
+          { "building.high_vp": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "construct_building",
+        "message": "You have resources for a high-VP building - consider constructing!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "worker_upgrade",
+      "priority": 82,
+      "conditions": {
+        "and": [
+          { "tracker.workers_available.value": { "lessThan": 4 } },
+          { "available_action.grants_worker": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "get_worker",
+        "message": "More workers = more actions! Consider getting an additional worker.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "seasonal_bonus",
+      "priority": 75,
+      "conditions": {
+        "and": [
+          { "season": { "equals": "fall" } },
+          { "available_action.harvest_bonus": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "harvest_action",
+        "message": "Fall harvest! Take advantage of seasonal bonuses.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "winter_preparation",
+      "priority": 80,
+      "conditions": {
+        "and": [
+          { "season": { "equals": "fall" } },
+          { "resources.food_total": { "lessThan": "workers.count" } }
+        ]
+      },
+      "action": {
+        "recommend": "gather_food",
+        "message": "Winter coming! Make sure you have food to feed your gnomes.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "block_opponent_action",
+      "priority": 78,
+      "conditions": {
+        "and": [
+          { "opponent.likely_wants_action": { "equals": true } },
+          { "action.limited_slots": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "block_action",
+        "message": "Consider blocking - opponent likely wants this action spot!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "market_opportunity",
+      "priority": 70,
+      "conditions": {
+        "and": [
+          { "market.has_good_deals": { "equals": true } },
+          { "resources.can_trade": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "use_market",
+        "message": "Good trade available at market - convert resources efficiently.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "endgame_scoring",
+      "priority": 95,
+      "conditions": {
+        "tracker.current_round.value": { "greaterThanOrEqual": 7 }
+      },
+      "action": {
+        "recommend": "maximize_points",
+        "message": "Final rounds! Prioritize VP-generating actions over engine building.",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "combo_building",
+      "priority": 72,
+      "conditions": {
+        "and": [
+          { "building.synergy_available": { "equals": true } },
+          { "owned_buildings.has_combo": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "build_combo",
+        "message": "This building combos with your existing buildings!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "gnome_ability",
+      "priority": 68,
+      "conditions": {
+        "and": [
+          { "gnome.ability_ready": { "equals": true } },
+          { "ability.high_impact": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "use_ability",
+        "message": "Use your gnome's special ability for bonus effect!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "resource_balance",
+      "priority": 65,
+      "conditions": {
+        "resources.imbalanced": { "equals": true }
+      },
+      "action": {
+        "recommend": "balance_resources",
+        "message": "Resource imbalance - diversify your resource gathering.",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "first_player_value",
+      "priority": 60,
+      "conditions": {
+        "and": [
+          { "available_action.grants_first_player": { "equals": true } },
+          { "next_round.contested_actions": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "take_first_player",
+        "message": "Consider taking first player for next round's contested actions.",
+        "alertLevel": "low"
+      }
+    }
+  ],
+
+  "scoringGuide": {
+    "buildings": "VP based on building type and combos",
+    "resources": "Some end-game value",
+    "gnomes": "Special scoring from character abilities",
+    "achievements": "Bonus VP for completing objectives"
+  },
+
+  "commonMistakes": [
+    {
+      "mistake": "Not getting additional workers early",
+      "why_bad": "Fewer actions per round compounds over time",
+      "fix": "Prioritize worker acquisition in rounds 1-3"
+    },
+    {
+      "mistake": "Building too early without engine",
+      "why_bad": "No resource generation for later buildings",
+      "fix": "Establish resource income before big builds"
+    },
+    {
+      "mistake": "Ignoring seasonal bonuses",
+      "why_bad": "Missing free extra resources/effects",
+      "fix": "Plan around seasonal action bonuses"
+    },
+    {
+      "mistake": "Not preparing for winter",
+      "why_bad": "Penalties for not feeding workers",
+      "fix": "Gather food in fall before winter"
+    }
+  ]
+}

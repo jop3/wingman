@@ -1,0 +1,512 @@
+{
+  "gameId": "wingspan",
+  "gameName": "Wingspan",
+  "version": "1.0.0",
+  
+  "detectors": {
+    "food_caching_rate": {
+      "type": "frequency",
+      "sample_size": 10,
+      "match": { "action": "cache_food" },
+      "description": "Hur ofta spelaren cachar mat på fåglar"
+    },
+    
+    "egg_laying_focus": {
+      "type": "frequency",
+      "sample_size": 10,
+      "match": { "action": "lay_eggs" },
+      "description": "Frekvens av äggläggning som primär action"
+    },
+    
+    "card_draw_preference": {
+      "type": "frequency",
+      "sample_size": 10,
+      "match": { "action": "draw_cards" },
+      "description": "Hur ofta spelaren drar kort istället för annat"
+    },
+    
+    "tucking_frequency": {
+      "type": "frequency",
+      "sample_size": 10,
+      "match": { "action": "tuck_card" },
+      "description": "Hur ofta spelaren tuckar kort under fåglar"
+    },
+    
+    "raven_crow_usage": {
+      "type": "frequency",
+      "sample_size": 15,
+      "match": { "bird_type": "raven_crow" },
+      "description": "Användning av ravens och crows (food stealing)"
+    },
+    
+    "predator_usage": {
+      "type": "frequency",
+      "sample_size": 15,
+      "match": { "power_type": "predator" },
+      "description": "Spelar fåglar som äter ägg från andra"
+    },
+    
+    "habitat_diversity": {
+      "type": "average",
+      "field": "habitats_used",
+      "description": "Genomsnittligt antal olika habitat i bruk"
+    },
+    
+    "bonus_card_completion": {
+      "type": "ratio",
+      "numerator": { "action": "complete_bonus" },
+      "denominator": { "action": "any" },
+      "description": "Andel spelad tid som fokuserar på bonuskort"
+    },
+    
+    "round4_burst": {
+      "type": "trend",
+      "metric": "birds_played",
+      "description": "Spelar spelaren fler fåglar i runda 4?"
+    },
+    
+    "engine_building_rate": {
+      "type": "average",
+      "field": "birds_with_when_activated",
+      "description": "Genomsnittligt antal when-activated powers"
+    }
+  },
+  
+  "strategies": {
+    "egg_engine": {
+      "name": "Ägg-motor (Egg Engine)",
+      "description": "Bygger motor för massiv äggproduktion",
+      "indicators": [
+        {
+          "pattern": "egg_laying_focus",
+          "weight": 30,
+          "threshold": { "min": 0.4 }
+        },
+        {
+          "pattern": "food_caching_rate",
+          "weight": 20,
+          "threshold": { "min": 0.3 }
+        },
+        {
+          "pattern": "engine_building_rate",
+          "weight": 25,
+          "threshold": { "min": 3.5 }
+        },
+        {
+          "pattern": "habitat_diversity",
+          "weight": 25,
+          "threshold": { "max": 2.2 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "play_platform_nest_birds",
+          "probability": 0.85,
+          "reasoning": "Platform nests ger mest ägg"
+        },
+        {
+          "action": "activate_grassland_repeatedly",
+          "probability": 0.90,
+          "reasoning": "Grassland är ägg-habitat"
+        },
+        {
+          "action": "ignore_predators",
+          "probability": 0.75,
+          "reasoning": "Vill inte förlora ägg genom predators"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "priority": 85,
+          "action": "play_predators",
+          "description": "Spela fåglar som äter ägg - direkt counter till deras strategi"
+        },
+        {
+          "priority": 75,
+          "action": "compete_for_platform_birds",
+          "description": "Ta platform nest-fåglar innan dem"
+        },
+        {
+          "priority": 60,
+          "action": "focus_alternative_scoring",
+          "description": "Fokusera på bonuskort och tuck-poäng istället"
+        }
+      ],
+      "keyBirds": ["Killdeer", "American Goldfinch", "Great Crested Flycatcher"]
+    },
+    
+    "tuck_converter": {
+      "name": "Kort-tuckare (Tuck Converter)",
+      "description": "Tuckar kort under fåglar för massiva poäng",
+      "indicators": [
+        {
+          "pattern": "tucking_frequency",
+          "weight": 40,
+          "threshold": { "min": 0.35 }
+        },
+        {
+          "pattern": "card_draw_preference",
+          "weight": 30,
+          "threshold": { "min": 0.4 }
+        },
+        {
+          "pattern": "engine_building_rate",
+          "weight": 30,
+          "threshold": { "min": 3.0 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "play_chipmunk_franklin_gull",
+          "probability": 0.95,
+          "reasoning": "Chipmunk och Franklin's Gull = tucking-motorer"
+        },
+        {
+          "action": "draw_cards_frequently",
+          "probability": 0.90,
+          "reasoning": "Behöver konstant kortflöde för tucking"
+        },
+        {
+          "action": "explosive_round4",
+          "probability": 0.80,
+          "reasoning": "Motorn exploderar i runda 4"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "priority": 90,
+          "action": "compete_for_chipmunk",
+          "description": "KRITISKT: Ta Chipmunk och Franklin's Gull innan dem"
+        },
+        {
+          "priority": 70,
+          "action": "limit_their_card_access",
+          "description": "Ta fåglar som ger kort från tray"
+        },
+        {
+          "priority": 60,
+          "action": "rush_ending",
+          "description": "Trigga endgame innan deras motor når full kraft"
+        }
+      ],
+      "keyBirds": ["Chipmunk", "Franklin's Gull", "Killdeer"]
+    },
+    
+    "raven_converter": {
+      "name": "Raven-converter (Food Stealer)",
+      "description": "Använder ravens/crows för att stjäla mat och konvertera",
+      "indicators": [
+        {
+          "pattern": "raven_crow_usage",
+          "weight": 50,
+          "threshold": { "min": 0.25 }
+        },
+        {
+          "pattern": "food_caching_rate",
+          "weight": 30,
+          "threshold": { "min": 0.35 }
+        },
+        {
+          "pattern": "card_draw_preference",
+          "weight": 20,
+          "threshold": { "min": 0.3 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "play_ravens_early",
+          "probability": 0.90,
+          "reasoning": "Ravens/crows i runda 1-2 för maximal effekt"
+        },
+        {
+          "action": "cache_stolen_food",
+          "probability": 0.85,
+          "reasoning": "Konverterar stulen mat till poäng"
+        },
+        {
+          "action": "target_richest_player",
+          "probability": 0.80,
+          "reasoning": "Stjäl från spelaren med mest cachad mat"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "priority": 95,
+          "action": "dont_cache_food_early",
+          "description": "KRITISKT: Cacha INTE mat innan runda 3 - de kommer stjäla"
+        },
+        {
+          "priority": 80,
+          "action": "play_ravens_yourself",
+          "description": "Counter-steal från dem"
+        },
+        {
+          "priority": 70,
+          "action": "use_food_immediately",
+          "description": "Spela fåglar direkt istället för att cacha"
+        }
+      ],
+      "keyBirds": ["Common Raven", "American Crow", "Chihuahuan Raven"],
+      "threatMultiplier": 1.5
+    },
+    
+    "predator_aggressor": {
+      "name": "Predator-agressor (Egg Stealer)",
+      "description": "Använder predators för att äta andras ägg",
+      "indicators": [
+        {
+          "pattern": "predator_usage",
+          "weight": 45,
+          "threshold": { "min": 0.20 }
+        },
+        {
+          "pattern": "egg_laying_focus",
+          "weight": 35,
+          "threshold": { "min": 0.25 }
+        },
+        {
+          "pattern": "habitat_diversity",
+          "weight": 20,
+          "threshold": { "min": 2.5 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "target_egg_engines",
+          "probability": 0.90,
+          "reasoning": "Äter från spelare med flest ägg"
+        },
+        {
+          "action": "play_multiple_predators",
+          "probability": 0.75,
+          "reasoning": "Stackar predator-effekter"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "priority": 75,
+          "action": "minimize_egg_exposure",
+          "description": "Spela färre platform nests, använd ägg snabbt"
+        },
+        {
+          "priority": 65,
+          "action": "play_high_value_birds",
+          "description": "Fokusera på fågelvärde och bonuskort istället"
+        }
+      ],
+      "keyBirds": ["Peregrine Falcon", "Red-tailed Hawk", "Great Horned Owl"]
+    },
+    
+    "bonus_card_hunter": {
+      "name": "Bonuskorts-jägare (Bonus Hunter)",
+      "description": "Fokuserar hårt på att slutföra bonuskort",
+      "indicators": [
+        {
+          "pattern": "bonus_card_completion",
+          "weight": 40,
+          "threshold": { "min": 0.3 }
+        },
+        {
+          "pattern": "habitat_diversity",
+          "weight": 35,
+          "threshold": { "min": 2.8 }
+        },
+        {
+          "pattern": "card_draw_preference",
+          "weight": 25,
+          "threshold": { "min": 0.35 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "diversify_habitats",
+          "probability": 0.85,
+          "reasoning": "Spelar i alla tre habitat för bonuskort"
+        },
+        {
+          "action": "target_specific_bird_types",
+          "probability": 0.80,
+          "reasoning": "Väljer fåglar strategiskt för bonuskort"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "priority": 70,
+          "action": "compete_for_same_birds",
+          "description": "Ta fåglar de behöver för bonuskort"
+        },
+        {
+          "priority": 60,
+          "action": "maximize_engine_efficiency",
+          "description": "De offrar engine-effektivitet - exploatera det"
+        }
+      ],
+      "keyBirds": ["Varies by bonus cards"]
+    },
+    
+    "engine_perfectionist": {
+      "name": "Motor-perfektionist (Engine Perfectionist)",
+      "description": "Bygger perfekt optimerad motor, sen exploaterar",
+      "indicators": [
+        {
+          "pattern": "engine_building_rate",
+          "weight": 40,
+          "threshold": { "min": 4.5 }
+        },
+        {
+          "pattern": "round4_burst",
+          "weight": 35,
+          "threshold": { "equals": "increasing" }
+        },
+        {
+          "pattern": "card_draw_preference",
+          "weight": 25,
+          "threshold": { "min": 0.3 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "slow_start_explosive_finish",
+          "probability": 0.90,
+          "reasoning": "Bygger långsamt, massiv output i runda 4"
+        },
+        {
+          "action": "play_when_activated_birds",
+          "probability": 0.95,
+          "reasoning": "Stackar when-activated powers"
+        },
+        {
+          "action": "predict_15_20_points_round4",
+          "probability": 0.85,
+          "reasoning": "Räkna med explosiv runda 4"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "priority": 80,
+          "action": "early_pressure",
+          "description": "Bygg snabbt lead - tvinga dem att kompromissa"
+        },
+        {
+          "priority": 70,
+          "action": "monitor_their_powers",
+          "description": "Räkna when-activated powers - förutse explosionen"
+        },
+        {
+          "priority": 65,
+          "action": "consider_rushing",
+          "description": "Överväg att trigga endgame innan runda 4"
+        }
+      ],
+      "keyBirds": ["American Goldfinch", "Killdeer", "Any when-activated"]
+    },
+    
+    "balanced_generalist": {
+      "name": "Balanserad generalist (Balanced Player)",
+      "description": "Blandar strategier, inget extremt fokus",
+      "indicators": [
+        {
+          "pattern": "habitat_diversity",
+          "weight": 30,
+          "threshold": { "min": 2.5, "max": 3.0 }
+        },
+        {
+          "pattern": "egg_laying_focus",
+          "weight": 25,
+          "threshold": { "min": 0.2, "max": 0.35 }
+        },
+        {
+          "pattern": "card_draw_preference",
+          "weight": 25,
+          "threshold": { "min": 0.2, "max": 0.35 }
+        },
+        {
+          "pattern": "tucking_frequency",
+          "weight": 20,
+          "threshold": { "min": 0.1, "max": 0.25 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "adapt_to_opportunities",
+          "probability": 0.70,
+          "reasoning": "Tar bästa tillgängliga option"
+        },
+        {
+          "action": "avoid_extreme_risks",
+          "probability": 0.80,
+          "reasoning": "Säker, konsistent spelstil"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "priority": 60,
+          "action": "specialize_hard",
+          "description": "Gå all-in på en strategi för högre poängtak"
+        },
+        {
+          "priority": 50,
+          "action": "take_calculated_risks",
+          "description": "De undviker risk - exploatera det"
+        }
+      ]
+    }
+  },
+  
+  "threatAssessment": [
+    {
+      "level": "critical",
+      "strategy": "raven_converter",
+      "conditions": {
+        "raven_crow_usage": { "min": 0.3 }
+      },
+      "reason": "Food-stealing direkt saboterar din strategi"
+    },
+    {
+      "level": "critical",
+      "strategy": "tuck_converter",
+      "conditions": {
+        "tucking_frequency": { "min": 0.4 }
+      },
+      "reason": "15-20 poäng från tucking i runda 4"
+    },
+    {
+      "level": "high",
+      "strategy": "engine_perfectionist",
+      "conditions": {
+        "engine_building_rate": { "min": 4.5 }
+      },
+      "reason": "Explosiv runda 4 förväntas"
+    },
+    {
+      "level": "high",
+      "strategy": "predator_aggressor",
+      "conditions": {
+        "predator_usage": { "min": 0.25 }
+      },
+      "reason": "Kommer äta dina ägg"
+    },
+    {
+      "level": "medium",
+      "strategy": "egg_engine",
+      "conditions": {
+        "egg_laying_focus": { "min": 0.45 }
+      },
+      "reason": "Stark strategi men counterable"
+    },
+    {
+      "level": "medium",
+      "strategy": "bonus_card_hunter",
+      "conditions": {
+        "bonus_card_completion": { "min": 0.35 }
+      },
+      "reason": "Fokuserar bonuskort över engine"
+    },
+    {
+      "level": "low",
+      "strategy": "balanced_generalist",
+      "conditions": {},
+      "reason": "Säker spelstil, lågt poängtak"
+    }
+  ]
+}

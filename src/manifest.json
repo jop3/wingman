@@ -1,0 +1,79 @@
+{
+  "manifest_version": 3,
+  "name": "Wingman - BGA Assistant",
+  "version": "1.0.0",
+  "description": "Intelligent game strategy and opponent analysis for Board Game Arena",
+
+  "permissions": [
+    "storage"
+  ],
+
+  "host_permissions": [
+    "*://*.boardgamearena.com/*",
+    "*://boardgamearena.com/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.boardgamearena.com/table*",
+        "*://boardgamearena.com/table*"
+      ],
+      "js": [
+        "core/RuleEngine.js",
+        "core/OpponentAnalyzer.js",
+        "parsers/game-detector.js",
+        "parsers/websocket-interceptor.js",
+        "parsers/wingspan-parser.js",
+        "parsers/sushigo-parser.js",
+        "parsers/tickettoride-parser.js",
+        "parsers/azul-parser.js",
+        "parsers/bunnykingdom-parser.js",
+        "parsers/gnomehollow-parser.js",
+        "parsers/smallworld-parser.js",
+        "parsers/catan-parser.js",
+        "content.js"
+      ],
+      "css": [
+        "ui/sidebar.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+
+  "action": {
+    "default_popup": "ui/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "games/*.json",
+        "opponents/*.json",
+        "ui/sidebar.html",
+        "ui/sidebar.css"
+      ],
+      "matches": [
+        "*://*.boardgamearena.com/*"
+      ]
+    }
+  ]
+}

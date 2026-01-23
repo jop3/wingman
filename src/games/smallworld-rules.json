@@ -1,0 +1,353 @@
+{
+  "gameId": "smallworld",
+  "gameName": "Small World",
+  "version": "1.0.0",
+
+  "constants": {
+    "total_rounds": 10,
+    "phases": ["conquest", "redeployment", "scoring"],
+    "min_conquest_tokens": 2,
+    "decline_cost": 1
+  },
+
+  "trackers": {
+    "current_round": {
+      "type": "counter",
+      "initial": 1,
+      "description": "Current round"
+    },
+    "active_tokens": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Tokens available for conquest"
+    },
+    "regions_controlled": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Number of regions you control"
+    },
+    "coins": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Victory coins collected"
+    }
+  },
+
+  "rules": [
+    {
+      "id": "first_conquest_edge",
+      "priority": 95,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "equals": 1 } },
+          { "tracker.regions_controlled.value": { "equals": 0 } }
+        ]
+      },
+      "action": {
+        "recommend": "start_from_edge",
+        "message": "First conquest must start from a border or coastal region!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "race_power_selection",
+      "priority": 92,
+      "conditions": {
+        "and": [
+          { "phase": { "equals": "selection" } },
+          { "available_races.count": { "greaterThan": 0 } }
+        ]
+      },
+      "action": {
+        "recommend": "evaluate_combos",
+        "message": "Evaluate race/power combos - tokens + synergy + coins on combo matter!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "consider_decline",
+      "priority": 90,
+      "conditions": {
+        "and": [
+          { "tracker.active_tokens.value": { "lessThanOrEqual": 3 } },
+          { "tracker.regions_controlled.value": { "greaterThan": 2 } },
+          { "round": { "lessThan": 9 } }
+        ]
+      },
+      "action": {
+        "recommend": "go_in_decline",
+        "message": "Low tokens and spread thin - consider going into decline for a fresh race!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "too_late_for_decline",
+      "priority": 88,
+      "conditions": {
+        "tracker.current_round.value": { "greaterThanOrEqual": 9 }
+      },
+      "action": {
+        "recommend": "avoid_decline",
+        "message": "Too late to decline - maximize points with current race!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "attack_weak_regions",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "phase": { "equals": "conquest" } },
+          { "adjacent_region.defense": { "lessThanOrEqual": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "conquer_weak",
+        "message": "Weak region adjacent - conquer it efficiently with fewer tokens!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "conquer_decline_tokens",
+      "priority": 82,
+      "conditions": {
+        "and": [
+          { "phase": { "equals": "conquest" } },
+          { "adjacent_region.has_decline_tokens": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "attack_decline",
+        "message": "Decline tokens are easy targets - they don't redeploy!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "use_reinforcement_die",
+      "priority": 80,
+      "conditions": {
+        "and": [
+          { "phase": { "equals": "conquest" } },
+          { "tracker.active_tokens.value": { "lessThan": "region.defense" } },
+          { "reinforcement_die.available": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "use_die",
+        "message": "Not enough tokens - use reinforcement die for final conquest!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "protect_key_regions",
+      "priority": 78,
+      "conditions": {
+        "and": [
+          { "phase": { "equals": "redeployment" } },
+          { "region.has_special_power_bonus": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "fortify_bonus_regions",
+        "message": "Stack tokens on regions that give you power bonuses!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "spread_for_scoring",
+      "priority": 75,
+      "conditions": {
+        "phase": { "equals": "redeployment" }
+      },
+      "action": {
+        "recommend": "minimize_defense",
+        "message": "Leave minimum tokens (usually 1) per region to maximize spread.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "mountain_defense",
+      "priority": 72,
+      "conditions": {
+        "and": [
+          { "region.type": { "equals": "mountain" } },
+          { "phase": { "equals": "redeployment" } }
+        ]
+      },
+      "action": {
+        "recommend": "use_mountain_defense",
+        "message": "Mountains give +1 defense - valuable defensive positions!",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "exploit_race_power",
+      "priority": 88,
+      "conditions": {
+        "and": [
+          { "race.has_terrain_bonus": { "equals": true } },
+          { "adjacent_region.matches_bonus": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "use_race_synergy",
+        "message": "Target regions matching your race/power bonus!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "flying_advantage",
+      "priority": 86,
+      "conditions": {
+        "power": { "equals": "flying" }
+      },
+      "action": {
+        "recommend": "use_flying",
+        "message": "Flying power - attack any region, not just adjacent ones!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "underworld_tunnels",
+      "priority": 84,
+      "conditions": {
+        "power": { "equals": "underworld" }
+      },
+      "action": {
+        "recommend": "use_tunnels",
+        "message": "Underworld - caverns are adjacent to each other!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "diplomat_peace",
+      "priority": 83,
+      "conditions": {
+        "power": { "equals": "diplomat" }
+      },
+      "action": {
+        "recommend": "choose_peace_target",
+        "message": "Diplomat - choose wisely who you make peace with!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "deny_opponent_bonus",
+      "priority": 76,
+      "conditions": {
+        "and": [
+          { "opponent.has_terrain_bonus": { "equals": true } },
+          { "can_attack_bonus_region": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "deny_bonus",
+        "message": "Opponent has terrain bonus - consider attacking those regions!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "endgame_push",
+      "priority": 95,
+      "conditions": {
+        "tracker.current_round.value": { "greaterThanOrEqual": 8 }
+      },
+      "action": {
+        "recommend": "maximize_regions",
+        "message": "Final rounds! Maximize region count for end-game scoring!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "skeletons_special",
+      "priority": 85,
+      "conditions": {
+        "race": { "equals": "skeletons" }
+      },
+      "action": {
+        "recommend": "attack_active_races",
+        "message": "Skeletons gain tokens from conquering non-empty regions!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "elves_special",
+      "priority": 85,
+      "conditions": {
+        "race": { "equals": "elves" }
+      },
+      "action": {
+        "recommend": "defend_safely",
+        "message": "Elves don't lose tokens when conquered - be aggressive!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "amazons_conquest",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "race": { "equals": "amazons" } },
+          { "phase": { "equals": "conquest" } }
+        ]
+      },
+      "action": {
+        "recommend": "use_amazon_bonus",
+        "message": "Amazons get +4 tokens for conquest only - conquer as many as possible!",
+        "alertLevel": "high"
+      }
+    }
+  ],
+
+  "scoringGuide": {
+    "regions": "1 coin per region controlled at end of turn",
+    "race_bonuses": "Additional coins from race/power abilities",
+    "decline_regions": "Decline tokens also score 1 coin per region"
+  },
+
+  "commonMistakes": [
+    {
+      "mistake": "Declining too late",
+      "why_bad": "New race doesn't have enough turns to be profitable",
+      "fix": "Decline when active tokens drop below 4-5"
+    },
+    {
+      "mistake": "Overextending early",
+      "why_bad": "Tokens spread too thin, easy to counter-attack",
+      "fix": "Balance conquest with defensible positions"
+    },
+    {
+      "mistake": "Ignoring race/power synergies",
+      "why_bad": "Missing significant bonus points each turn",
+      "fix": "Prioritize regions matching your bonuses"
+    },
+    {
+      "mistake": "Not using reinforcement die",
+      "why_bad": "Missing final conquest opportunities",
+      "fix": "Always use the die on your last conquest attempt"
+    },
+    {
+      "mistake": "Attacking strong positions",
+      "why_bad": "Wastes tokens that could conquer more regions",
+      "fix": "Target weak regions and decline tokens first"
+    }
+  ]
+}

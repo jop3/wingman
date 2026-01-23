@@ -1,0 +1,125 @@
+{
+  "gameId": "gnomehollow",
+  "version": "1.0.0",
+
+  "detectors": {
+    "engine_builder": {
+      "description": "Focuses on resource generation engines",
+      "signals": [
+        { "pattern": "takes_production_actions", "weight": 0.8 },
+        { "pattern": "builds_resource_buildings", "weight": 0.9 },
+        { "pattern": "worker_focus_early", "weight": 0.7 }
+      ],
+      "threshold": 0.7
+    },
+    "building_rusher": {
+      "description": "Rushes to construct buildings quickly",
+      "signals": [
+        { "pattern": "builds_frequently", "weight": 0.9 },
+        { "pattern": "high_building_count", "weight": 0.8 },
+        { "pattern": "converts_resources_fast", "weight": 0.7 }
+      ],
+      "threshold": 0.7
+    },
+    "market_trader": {
+      "description": "Uses market heavily for resource conversion",
+      "signals": [
+        { "pattern": "frequent_market_visits", "weight": 0.8 },
+        { "pattern": "trades_resources_often", "weight": 0.7 },
+        { "pattern": "diverse_resources", "weight": 0.6 }
+      ],
+      "threshold": 0.65
+    },
+    "action_blocker": {
+      "description": "Blocks contested action spaces",
+      "signals": [
+        { "pattern": "takes_popular_actions_early", "weight": 0.8 },
+        { "pattern": "blocks_opponent_plans", "weight": 0.9 },
+        { "pattern": "wastes_some_actions", "weight": 0.5 }
+      ],
+      "threshold": 0.65
+    },
+    "gnome_specialist": {
+      "description": "Leverages gnome abilities heavily",
+      "signals": [
+        { "pattern": "uses_abilities_often", "weight": 0.8 },
+        { "pattern": "recruits_multiple_gnomes", "weight": 0.7 },
+        { "pattern": "ability_combos", "weight": 0.9 }
+      ],
+      "threshold": 0.7
+    }
+  },
+
+  "strategies": {
+    "engine_focus": {
+      "name": "Engine Builder",
+      "description": "Building strong resource generation for late game",
+      "detectors": ["engine_builder"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "contest_production",
+        "message": "Opponent building engine - contest production spots and rush points!",
+        "priority": 80
+      }
+    },
+    "rush_build": {
+      "name": "Building Rusher",
+      "description": "Racing to construct buildings for points",
+      "detectors": ["building_rusher"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "block_resources",
+        "message": "Opponent rushing buildings - deny their key resources!",
+        "priority": 85
+      }
+    },
+    "market_control": {
+      "name": "Market Controller",
+      "description": "Controlling market for flexible resource conversion",
+      "detectors": ["market_trader"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "contest_market",
+        "message": "Opponent using market heavily - consider contesting it.",
+        "priority": 65
+      }
+    },
+    "denial_play": {
+      "name": "Action Denier",
+      "description": "Playing to block opponent actions",
+      "detectors": ["action_blocker"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "diversify_plans",
+        "message": "Opponent blocking - have backup action plans ready.",
+        "priority": 70
+      }
+    },
+    "gnome_power": {
+      "name": "Gnome Specialist",
+      "description": "Maximizing gnome abilities",
+      "detectors": ["gnome_specialist"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "recruit_gnomes",
+        "message": "Opponent leveraging gnomes - consider recruiting your own.",
+        "priority": 68
+      }
+    }
+  },
+
+  "threat_assessment": {
+    "HIGH": {
+      "indicators": ["strong_engine", "many_buildings", "high_worker_count"],
+      "response": "Active blocking and racing"
+    },
+    "MEDIUM": {
+      "indicators": ["moderate_development", "some_combos"],
+      "response": "Monitor and adapt"
+    },
+    "LOW": {
+      "indicators": ["slow_start", "inefficient_plays"],
+      "response": "Focus on own strategy"
+    }
+  }
+}

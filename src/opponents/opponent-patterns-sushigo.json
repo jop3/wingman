@@ -1,0 +1,371 @@
+{
+  "gameId": "sushigo",
+  "gameName": "Sushi Go - Opponent Analysis",
+
+  "detectors": {
+    "pudding_priority": {
+      "type": "frequency",
+      "sample_size": 6,
+      "match": { "cardType": "pudding" },
+      "description": "Hur ofta väljer de pudding?"
+    },
+    "maki_aggression": {
+      "type": "ratio",
+      "numerator": { "cardType": "maki" },
+      "denominator": { "cardType": "any" },
+      "description": "Ratio maki-val vs andra kort"
+    },
+    "tempura_commitment": {
+      "type": "sequence",
+      "sequence": [
+        { "cardType": "tempura" },
+        { "cardType": "tempura" }
+      ],
+      "description": "Parar de tempura konsekvent?"
+    },
+    "sashimi_risk_taking": {
+      "type": "frequency",
+      "sample_size": 8,
+      "match": { "cardType": "sashimi", "round": 3 },
+      "description": "Tar de sashimi-risker i runda 3?"
+    },
+    "dumpling_optimization": {
+      "type": "trend",
+      "metric": "dumpling_count",
+      "description": "Samlar de dumplings progressivt?"
+    },
+    "wasabi_setup": {
+      "type": "frequency",
+      "sample_size": 10,
+      "match": { "cardType": "wasabi" },
+      "description": "Hur ofta tar de wasabi?"
+    },
+    "nigiri_timing": {
+      "type": "average",
+      "field": "cards_left_when_took_nigiri",
+      "description": "När tar de nigiri (tidigt vs sent)?"
+    },
+    "chopsticks_usage": {
+      "type": "frequency",
+      "sample_size": 10,
+      "match": { "usedChopsticks": true },
+      "description": "Använder de chopsticks strategiskt?"
+    },
+    "defensive_pudding": {
+      "type": "frequency",
+      "sample_size": 5,
+      "match": { "cardType": "pudding", "round": 3, "position": "last" },
+      "description": "Tar de pudding defensivt i runda 3?"
+    }
+  },
+
+  "strategies": {
+    "pudding_hoarder": {
+      "name": "Pudding-samlare",
+      "description": "Prioriterar pudding över allt annat för -6p försvar",
+      "indicators": [
+        {
+          "pattern": "pudding_priority",
+          "weight": 4,
+          "threshold": { "min": 0.4 }
+        },
+        {
+          "pattern": "defensive_pudding",
+          "weight": 3,
+          "threshold": { "min": 0.6 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "take_all_puddings",
+          "probability": 0.85,
+          "reasoning": "Tar pudding varje gång de ser en"
+        },
+        {
+          "action": "sacrifice_round_points",
+          "probability": 0.7,
+          "reasoning": "Offrar poäng i rundan för pudding"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "compete_for_pudding",
+          "priority": 80,
+          "description": "Ta puddings tidigt för att tvinga dem till dåliga val"
+        },
+        {
+          "action": "focus_on_round_points",
+          "priority": 70,
+          "description": "Optimera rundpoäng medan de fokuserar på pudding"
+        }
+      ],
+      "weaknesses": [
+        "Dåliga rundpoäng",
+        "Förutsägbar - lätt att manipulera",
+        "Om flera samlar pudding, slösar de resurser"
+      ]
+    },
+
+    "maki_dominator": {
+      "name": "Maki-dominant",
+      "description": "Siktar på maki-majoritet varje runda",
+      "indicators": [
+        {
+          "pattern": "maki_aggression",
+          "weight": 4,
+          "threshold": { "min": 0.35 }
+        },
+        {
+          "pattern": "chopsticks_usage",
+          "weight": 2,
+          "threshold": { "min": 0.3 },
+          "note": "Använder chopsticks för dubbla maki"
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "prioritize_maki_3",
+          "probability": 0.9,
+          "reasoning": "Tar alltid maki3 när möjligt"
+        },
+        {
+          "action": "early_maki_rush",
+          "probability": 0.8,
+          "reasoning": "Samlar maki tidigt i varje runda"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "contest_early_or_abandon",
+          "priority": 75,
+          "description": "Antingen tävla tidigt eller låt dem ha det"
+        },
+        {
+          "action": "block_maki_3",
+          "priority": 80,
+          "description": "Ta maki3 även om du inte behöver, för att blockera"
+        }
+      ],
+      "weaknesses": [
+        "Ineffektivt om flera tävlar om maki",
+        "Ignorerar ofta andra poängmöjligheter",
+        "Lätt räkna och kontra sent i runda"
+      ]
+    },
+
+    "combo_maximizer": {
+      "name": "Kombo-maximerare",
+      "description": "Fokuserar på wasabi-nigiri och set-completion",
+      "indicators": [
+        {
+          "pattern": "wasabi_setup",
+          "weight": 3,
+          "threshold": { "min": 0.25 }
+        },
+        {
+          "pattern": "nigiri_timing",
+          "weight": 2,
+          "threshold": { "min": 5 },
+          "note": "Väntar på wasabi innan nigiri"
+        },
+        {
+          "pattern": "tempura_commitment",
+          "weight": 2,
+          "threshold": { "equals": true }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "setup_wasabi_first",
+          "probability": 0.85,
+          "reasoning": "Tar wasabi tidigt, väntar på salmon/squid"
+        },
+        {
+          "action": "complete_sets_aggressively",
+          "probability": 0.8,
+          "reasoning": "Prioriterar att komplettera tempura/sashimi-set"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "steal_nigiri",
+          "priority": 85,
+          "description": "Ta salmon/squid nigiri när de har wasabi"
+        },
+        {
+          "action": "break_their_sets",
+          "priority": 80,
+          "description": "Ta tempura/sashimi när de har 1-2"
+        },
+        {
+          "action": "pass_junk_after_wasabi",
+          "priority": 70,
+          "description": "Ge dem egg nigiri eller sämre alternativ"
+        }
+      ],
+      "weaknesses": [
+        "Sårbar för set-breaking",
+        "Kan fastna med tom wasabi",
+        "Förlitar sig på att få rätt kort"
+      ]
+    },
+
+    "risk_taker": {
+      "name": "Risktagare",
+      "description": "Går för sashimi och högrisk-högbelöning",
+      "indicators": [
+        {
+          "pattern": "sashimi_risk_taking",
+          "weight": 4,
+          "threshold": { "min": 0.4 }
+        },
+        {
+          "pattern": "dumpling_optimization",
+          "weight": 2,
+          "threshold": { "equals": "increasing" }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "commit_to_sashimi",
+          "probability": 0.75,
+          "reasoning": "Tar sashimi även sent i rundan"
+        },
+        {
+          "action": "push_dumpling_count",
+          "probability": 0.7,
+          "reasoning": "Fortsätter ta dumplings för marginalnytta"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "block_sashimi_trio",
+          "priority": 90,
+          "description": "Om de har 2 sashimi, ta den sista!"
+        },
+        {
+          "action": "deny_high_dumplings",
+          "priority": 70,
+          "description": "Ta dumplings när de har 3-4"
+        }
+      ],
+      "weaknesses": [
+        "Ofta 0 poäng från ofullständiga set",
+        "Lätt att blockera",
+        "Dåliga pudding-poäng"
+      ]
+    },
+
+    "defensive_player": {
+      "name": "Defensiv Spelare",
+      "description": "Minimerar risk, säkrar säkra poäng",
+      "indicators": [
+        {
+          "pattern": "pudding_priority",
+          "weight": 2,
+          "threshold": { "min": 0.25 }
+        },
+        {
+          "pattern": "tempura_commitment",
+          "weight": 3,
+          "threshold": { "equals": true }
+        },
+        {
+          "pattern": "sashimi_risk_taking",
+          "weight": 2,
+          "threshold": { "max": 0.2 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "safe_choices",
+          "probability": 0.85,
+          "reasoning": "Väljer säkra poäng framför risker"
+        },
+        {
+          "action": "avoid_incomplete_sets",
+          "probability": 0.9,
+          "reasoning": "Tar inte sashimi om osäker, väljer tempura"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "out_optimize",
+          "priority": 75,
+          "description": "Ta kalkulerade risker för högre ceiling"
+        },
+        {
+          "action": "force_bad_choices",
+          "priority": 70,
+          "description": "Manipulera hands så de bara har dåliga säkra val"
+        }
+      ],
+      "weaknesses": [
+        "Lågt poängtak",
+        "Förutsägbar",
+        "Kan inte hinna ikapp om de hamnar efter"
+      ]
+    }
+  },
+
+  "threatAssessment": [
+    {
+      "strategy": "combo_maximizer",
+      "conditions": {
+        "wasabi_setup": { "min": 0.3 }
+      },
+      "level": "high",
+      "reasoning": "Kan få massiva poäng från wasabi-kombos"
+    },
+    {
+      "strategy": "maki_dominator",
+      "conditions": {
+        "maki_aggression": { "min": 0.4 }
+      },
+      "level": "medium",
+      "reasoning": "Tar konsekvent maki-poäng"
+    },
+    {
+      "strategy": "risk_taker",
+      "level": "medium",
+      "reasoning": "Variabel threat - antingen höga poäng eller 0"
+    },
+    {
+      "strategy": "pudding_hoarder",
+      "level": "low",
+      "reasoning": "Fokuserar på pudding, inte rundpoäng"
+    },
+    {
+      "strategy": "defensive_player",
+      "level": "low",
+      "reasoning": "Konsekvent men låga poäng"
+    }
+  ],
+
+  "cardMemory": {
+    "description": "Spåra vilka kort som passerat och vad som kommer tillbaka",
+    "patterns": [
+      {
+        "round": 1,
+        "cards_per_hand": 10,
+        "prediction": "Kort du gav vänster kommer tillbaka efter 5 val"
+      },
+      {
+        "round": 2,
+        "cards_per_hand": 10,
+        "prediction": "Kort du gav höger kommer tillbaka efter 5 val"
+      },
+      {
+        "round": 3,
+        "cards_per_hand": 10,
+        "prediction": "Kort du gav vänster kommer tillbaka efter 5 val"
+      }
+    ]
+  },
+
+  "passDirection": {
+    "round_1": "left",
+    "round_2": "right",
+    "round_3": "left"
+  }
+}

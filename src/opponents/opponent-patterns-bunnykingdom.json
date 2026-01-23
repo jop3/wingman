@@ -1,0 +1,129 @@
+{
+  "gameId": "bunnykingdom",
+  "version": "1.0.0",
+
+  "detectors": {
+    "mega_fief_builder": {
+      "description": "Building one massive connected fief",
+      "signals": [
+        { "pattern": "large_connected_territory", "weight": 0.9 },
+        { "pattern": "takes_connecting_cards", "weight": 0.8 },
+        { "pattern": "few_fiefs_many_territories", "weight": 0.7 }
+      ],
+      "threshold": 0.7
+    },
+    "tower_stacker": {
+      "description": "Focusing on accumulating cities and towers",
+      "signals": [
+        { "pattern": "takes_city_cards_frequently", "weight": 0.8 },
+        { "pattern": "high_tower_count", "weight": 0.9 },
+        { "pattern": "sky_tower_collected", "weight": 0.7 }
+      ],
+      "threshold": 0.7
+    },
+    "resource_collector": {
+      "description": "Maximizing unique resource types",
+      "signals": [
+        { "pattern": "takes_new_resource_types", "weight": 0.8 },
+        { "pattern": "golden_carrot_collected", "weight": 0.9 },
+        { "pattern": "diverse_territory_selection", "weight": 0.6 }
+      ],
+      "threshold": 0.65
+    },
+    "parchment_hoarder": {
+      "description": "Collecting many secret objective cards",
+      "signals": [
+        { "pattern": "takes_parchments_often", "weight": 0.9 },
+        { "pattern": "board_matches_parchment_goals", "weight": 0.7 },
+        { "pattern": "3_plus_parchments", "weight": 0.8 }
+      ],
+      "threshold": 0.7
+    },
+    "territory_blocker": {
+      "description": "Taking territories to block others",
+      "signals": [
+        { "pattern": "takes_isolated_territories", "weight": 0.6 },
+        { "pattern": "blocks_opponent_connections", "weight": 0.9 },
+        { "pattern": "defensive_positioning", "weight": 0.7 }
+      ],
+      "threshold": 0.65
+    }
+  },
+
+  "strategies": {
+    "mega_fief": {
+      "name": "Mega Fief Builder",
+      "description": "Creating one massive fief for huge score",
+      "detectors": ["mega_fief_builder"],
+      "threat_level": "CRITICAL",
+      "counter_strategy": {
+        "action": "block_connections",
+        "message": "BLOCK: Opponent building mega-fief! Cut off their territory connections!",
+        "priority": 95
+      }
+    },
+    "tower_focus": {
+      "name": "Tower Stacker",
+      "description": "Maximizing tower count for multiplier",
+      "detectors": ["tower_stacker"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "deny_cities",
+        "message": "Opponent hoarding cities - consider taking city cards to deny them.",
+        "priority": 80
+      }
+    },
+    "resource_diversity": {
+      "name": "Resource Collector",
+      "description": "Maximizing unique resources for score multiplier",
+      "detectors": ["resource_collector"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "deny_resources",
+        "message": "Opponent collecting resources - deny rare types they need.",
+        "priority": 75
+      }
+    },
+    "parchment_play": {
+      "name": "Parchment Player",
+      "description": "Heavy parchment strategy for end-game points",
+      "detectors": ["parchment_hoarder"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "contest_parchments",
+        "message": "Opponent hoarding parchments - take some to deny their combos.",
+        "priority": 70
+      }
+    },
+    "defensive": {
+      "name": "Defensive Blocker",
+      "description": "Playing defensively to block others",
+      "detectors": ["territory_blocker"],
+      "threat_level": "LOW",
+      "counter_strategy": {
+        "action": "build_multiple_fiefs",
+        "message": "Opponent blocking - diversify with multiple smaller fiefs.",
+        "priority": 60
+      }
+    }
+  },
+
+  "threat_assessment": {
+    "CRITICAL": {
+      "indicators": ["fief_size_8_plus", "10_plus_towers", "4_plus_resources"],
+      "response": "Immediate blocking required"
+    },
+    "HIGH": {
+      "indicators": ["fief_size_5_plus", "collecting_sky_towers", "diverse_resources"],
+      "response": "Active denial and racing"
+    },
+    "MEDIUM": {
+      "indicators": ["moderate_territory_count", "some_parchments"],
+      "response": "Monitor and adapt"
+    },
+    "LOW": {
+      "indicators": ["scattered_territories", "no_clear_strategy"],
+      "response": "Focus on own strategy"
+    }
+  }
+}

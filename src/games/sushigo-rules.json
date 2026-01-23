@@ -1,0 +1,388 @@
+{
+  "gameId": "sushigo",
+  "gameName": "Sushi Go",
+  "version": "1.0.0",
+
+  "constants": {
+    "max_rounds": 3,
+    "cards_per_round": {
+      "2_players": 10,
+      "3_players": 9,
+      "4_players": 8,
+      "5_players": 7
+    },
+    "pudding_bonus": 6,
+    "pudding_penalty": -6,
+    "maki_first": 6,
+    "maki_second": 3
+  },
+
+  "trackers": {
+    "current_round": {
+      "type": "counter",
+      "initial": 1,
+      "description": "Current round (1-3)"
+    },
+    "pudding_count": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Puddings collected"
+    },
+    "maki_count": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Total maki rolls"
+    },
+    "tempura_count": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Tempura pieces (need 2 for 5p)"
+    },
+    "sashimi_count": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Sashimi pieces (need 3 for 10p)"
+    },
+    "dumpling_count": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Dumplings collected"
+    },
+    "has_wasabi": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Unused wasabi waiting for nigiri"
+    },
+    "has_chopsticks": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Chopsticks available to use"
+    }
+  },
+
+  "rules": [
+    {
+      "id": "pudding_crisis_round3",
+      "priority": 100,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "equals": 3 } },
+          { "tracker.pudding_count.value": { "lessThan": 2 } },
+          { "hand.contains": { "equals": "pudding" } }
+        ]
+      },
+      "action": {
+        "recommend": "take_pudding",
+        "message": "KRITISKT: Ta pudding NU eller riskera -6p i slutet!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "pudding_defense",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "tracker.pudding_count.value": { "lessThan": "opponent.max_puddings" } },
+          { "hand.contains": { "equals": "pudding" } }
+        ]
+      },
+      "action": {
+        "recommend": "consider_pudding",
+        "message": "Du ligger efter i pudding-racet. Överväg att ta pudding.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "complete_tempura",
+      "priority": 90,
+      "conditions": {
+        "and": [
+          { "tracker.tempura_count.value": { "equals": 1 } },
+          { "hand.contains": { "equals": "tempura" } }
+        ]
+      },
+      "action": {
+        "recommend": "take_tempura",
+        "message": "Slutför tempura-paret för 5 poäng!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "complete_sashimi",
+      "priority": 95,
+      "conditions": {
+        "and": [
+          { "tracker.sashimi_count.value": { "equals": 2 } },
+          { "hand.contains": { "equals": "sashimi" } }
+        ]
+      },
+      "action": {
+        "recommend": "take_sashimi",
+        "message": "Ta sashimi för att slutföra trion - 10 poäng!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "sashimi_risky_late",
+      "priority": 70,
+      "conditions": {
+        "and": [
+          { "tracker.sashimi_count.value": { "equals": 0 } },
+          { "cards_remaining": { "lessThan": 4 } },
+          { "hand.contains": { "equals": "sashimi" } }
+        ]
+      },
+      "action": {
+        "recommend": "avoid_sashimi",
+        "message": "Varning: För få kort kvar för att slutföra sashimi (0p om ofullständig)",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "wasabi_combo",
+      "priority": 88,
+      "conditions": {
+        "and": [
+          { "tracker.has_wasabi.value": { "greaterThan": 0 } },
+          { "hand.containsAny": { "in": ["nigiri3", "nigiri2"] } }
+        ]
+      },
+      "action": {
+        "recommend": "use_wasabi",
+        "message": "Använd wasabi! Ta squid nigiri (9p) eller salmon nigiri (6p)",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "setup_wasabi_early",
+      "priority": 65,
+      "conditions": {
+        "and": [
+          { "tracker.has_wasabi.value": { "equals": 0 } },
+          { "cards_remaining": { "greaterThan": 4 } },
+          { "hand.contains": { "equals": "wasabi" } }
+        ]
+      },
+      "action": {
+        "recommend": "take_wasabi",
+        "message": "Ta wasabi tidigt - vänta på squid/salmon nigiri för 9p/6p",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "dumpling_optimization",
+      "priority": 72,
+      "conditions": {
+        "and": [
+          { "tracker.dumpling_count.value": { "greaterThanOrEqual": 3 } },
+          { "tracker.dumpling_count.value": { "lessThan": 5 } },
+          { "hand.contains": { "equals": "dumpling" } }
+        ]
+      },
+      "action": {
+        "recommend": "take_dumpling",
+        "message": "Fortsätt samla dumplings - varje extra ger +marginalvärde",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "maki_competition",
+      "priority": 80,
+      "conditions": {
+        "and": [
+          { "tracker.maki_count.value": { "greaterThan": 0 } },
+          { "tracker.maki_count.value": { "lessThan": "opponent.max_maki" } },
+          { "hand.containsAny": { "in": ["maki3", "maki2"] } }
+        ]
+      },
+      "action": {
+        "recommend": "compete_maki",
+        "message": "Du är i maki-racet! Ta maki för att säkra 6p (1:a) eller 3p (2:a)",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "abandon_maki",
+      "priority": 60,
+      "conditions": {
+        "and": [
+          { "tracker.maki_count.value": { "equals": 0 } },
+          { "opponent.max_maki": { "greaterThan": 5 } }
+        ]
+      },
+      "action": {
+        "recommend": "skip_maki",
+        "message": "Motståndare har stort maki-försprång. Fokusera på andra poäng.",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "use_chopsticks",
+      "priority": 92,
+      "conditions": {
+        "and": [
+          { "tracker.has_chopsticks.value": { "greaterThan": 0 } },
+          { "hand.high_value_count": { "greaterThanOrEqual": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "use_chopsticks",
+        "message": "Använd chopsticks! Ta två bra kort denna runda",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "save_chopsticks_for_later",
+      "priority": 55,
+      "conditions": {
+        "and": [
+          { "tracker.has_chopsticks.value": { "equals": 0 } },
+          { "cards_remaining": { "greaterThan": 5 } },
+          { "hand.contains": { "equals": "chopsticks" } }
+        ]
+      },
+      "action": {
+        "recommend": "take_chopsticks",
+        "message": "Ta chopsticks för att kunna välja 2 kort senare",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "block_opponent_sashimi",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "opponent.sashimi_count": { "equals": 2 } },
+          { "hand.contains": { "equals": "sashimi" } }
+        ]
+      },
+      "action": {
+        "recommend": "block_sashimi",
+        "message": "BLOCKERA: Ta sashimi för att hindra motståndare från 10p!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "block_opponent_tempura",
+      "priority": 78,
+      "conditions": {
+        "and": [
+          { "opponent.tempura_count": { "equals": 1 } },
+          { "hand.contains": { "equals": "tempura" } },
+          { "tracker.tempura_count.value": { "equals": 0 } }
+        ]
+      },
+      "action": {
+        "recommend": "block_tempura",
+        "message": "Överväg att blockera: Ta tempura så motståndare inte får 5p",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "steal_nigiri_from_wasabi",
+      "priority": 82,
+      "conditions": {
+        "and": [
+          { "opponent.has_wasabi": { "greaterThan": 0 } },
+          { "hand.containsAny": { "in": ["nigiri3", "nigiri2"] } }
+        ]
+      },
+      "action": {
+        "recommend": "steal_nigiri",
+        "message": "Stjäl squid/salmon nigiri! Motståndare har wasabi och väntar på den",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "round3_maximize_points",
+      "priority": 75,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "equals": 3 } },
+          { "cards_remaining": { "lessThanOrEqual": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "maximize_immediate",
+        "message": "Sista dragen! Prioritera garanterade poäng över riskfyllda sets",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "early_game_sets",
+      "priority": 68,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "equals": 1 } },
+          { "cards_remaining": { "greaterThan": 6 } }
+        ]
+      },
+      "action": {
+        "recommend": "start_sets",
+        "message": "Runda 1: Bra tid att börja tempura/dumpling-sets",
+        "alertLevel": "low"
+      }
+    }
+  ],
+
+  "cardScoring": {
+    "nigiri1": { "base": 1, "with_wasabi": 3 },
+    "nigiri2": { "base": 2, "with_wasabi": 6 },
+    "nigiri3": { "base": 3, "with_wasabi": 9 },
+    "tempura": { "pair": 5, "single": 0 },
+    "sashimi": { "trio": 10, "incomplete": 0 },
+    "dumpling": { "1": 1, "2": 3, "3": 6, "4": 10, "5+": 15 },
+    "maki": { "first_place": 6, "second_place": 3 },
+    "pudding": { "most": 6, "least": -6 }
+  },
+
+  "passDirection": {
+    "round_1": "left",
+    "round_2": "right",
+    "round_3": "left"
+  },
+
+  "commonMistakes": [
+    {
+      "mistake": "Starta sashimi sent",
+      "why_bad": "Hög risk att inte hinna slutföra (0p för ofullständig)",
+      "fix": "Börja sashimi endast om 4+ kort kvar i handen"
+    },
+    {
+      "mistake": "Ignorera pudding helt",
+      "why_bad": "Minst puddings ger -6p i slutet",
+      "fix": "Sikta på minst 2-3 puddings över hela spelet"
+    },
+    {
+      "mistake": "Slösa wasabi på egg nigiri",
+      "why_bad": "Bara +2p extra (3p total). Squid ger +6p extra (9p total)",
+      "fix": "Vänta på squid (9p) eller åtminstone salmon (6p)"
+    },
+    {
+      "mistake": "Tävla om maki när man ligger långt efter",
+      "why_bad": "Slösar picks på kort man inte vinner poäng på",
+      "fix": "Om motståndare har 5+ maki försprång, fokusera på annat"
+    },
+    {
+      "mistake": "Använda chopsticks för mediokra kort",
+      "why_bad": "Chopsticks är värdefulla - spara för perfekt tillfälle",
+      "fix": "Vänta tills du ser 2 högt prioriterade kort i samma hand"
+    }
+  ]
+}

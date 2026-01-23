@@ -1,0 +1,187 @@
+{
+  "gameId": "catan",
+  "version": "1.0.0",
+
+  "detectors": {
+    "road_builder": {
+      "description": "Racing for longest road",
+      "signals": [
+        { "pattern": "builds_roads_frequently", "weight": 0.9 },
+        { "pattern": "long_road_chain", "weight": 0.8 },
+        { "pattern": "uses_road_building_card", "weight": 0.7 }
+      ],
+      "threshold": 0.7
+    },
+    "knight_collector": {
+      "description": "Building largest army",
+      "signals": [
+        { "pattern": "plays_knights_often", "weight": 0.9 },
+        { "pattern": "buys_dev_cards_frequently", "weight": 0.7 },
+        { "pattern": "high_knight_count", "weight": 0.8 }
+      ],
+      "threshold": 0.7
+    },
+    "city_rusher": {
+      "description": "Quickly upgrading to cities",
+      "signals": [
+        { "pattern": "early_cities", "weight": 0.9 },
+        { "pattern": "ore_wheat_focus", "weight": 0.8 },
+        { "pattern": "few_settlements_many_cities", "weight": 0.7 }
+      ],
+      "threshold": 0.7
+    },
+    "expansion_player": {
+      "description": "Spreading settlements across the board",
+      "signals": [
+        { "pattern": "many_settlements", "weight": 0.8 },
+        { "pattern": "wide_spread", "weight": 0.7 },
+        { "pattern": "diverse_resource_access", "weight": 0.9 }
+      ],
+      "threshold": 0.7
+    },
+    "harbor_controller": {
+      "description": "Controlling harbors for trade advantage",
+      "signals": [
+        { "pattern": "settles_near_harbors", "weight": 0.9 },
+        { "pattern": "trades_at_good_rates", "weight": 0.8 },
+        { "pattern": "resource_accumulation", "weight": 0.6 }
+      ],
+      "threshold": 0.65
+    },
+    "aggressive_blocker": {
+      "description": "Using robber and blocking aggressively",
+      "signals": [
+        { "pattern": "targets_same_player_robber", "weight": 0.9 },
+        { "pattern": "blocks_key_hexes", "weight": 0.8 },
+        { "pattern": "steals_when_possible", "weight": 0.7 }
+      ],
+      "threshold": 0.7
+    }
+  },
+
+  "strategies": {
+    "longest_road_race": {
+      "name": "Road Racer",
+      "description": "Competing hard for longest road bonus",
+      "detectors": ["road_builder"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "contest_or_ignore",
+        "message": "Opponent racing for longest road - either contest it or focus on other VP!",
+        "priority": 80
+      }
+    },
+    "army_builder": {
+      "name": "Army Builder",
+      "description": "Collecting knights for largest army",
+      "detectors": ["knight_collector"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "buy_dev_cards",
+        "message": "Opponent building army - buy dev cards to contest or get VP cards!",
+        "priority": 78
+      }
+    },
+    "city_rush": {
+      "name": "City Rusher",
+      "description": "Prioritizing city upgrades for VP and production",
+      "detectors": ["city_rusher"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "robber_on_ore_wheat",
+        "message": "Opponent rushing cities - block their ore/wheat with robber!",
+        "priority": 85
+      }
+    },
+    "wide_expansion": {
+      "name": "Expansion Player",
+      "description": "Spreading across the board",
+      "detectors": ["expansion_player"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "block_expansion",
+        "message": "Opponent expanding widely - block key settlement spots!",
+        "priority": 75
+      }
+    },
+    "trade_master": {
+      "name": "Harbor Controller",
+      "description": "Leveraging harbors for trade efficiency",
+      "detectors": ["harbor_controller"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "contest_harbors",
+        "message": "Opponent controlling harbors - settle near harbors yourself!",
+        "priority": 70
+      }
+    },
+    "aggressive": {
+      "name": "Aggressive Blocker",
+      "description": "Using robber strategically to slow leader",
+      "detectors": ["aggressive_blocker"],
+      "threat_level": "LOW",
+      "counter_strategy": {
+        "action": "diversify_production",
+        "message": "Opponent playing aggressively - diversify your resource production.",
+        "priority": 65
+      }
+    }
+  },
+
+  "position_analysis": {
+    "leading": {
+      "indicators": ["8_plus_vp_visible", "strong_production", "special_cards"],
+      "threat": "CRITICAL",
+      "response": "Focus robber on them, avoid trading with them"
+    },
+    "competitive": {
+      "indicators": ["6_7_vp", "good_production", "expansion_potential"],
+      "threat": "HIGH",
+      "response": "Watch their strategy, prepare to contest"
+    },
+    "developing": {
+      "indicators": ["4_5_vp", "building_engine", "acquiring_resources"],
+      "threat": "MEDIUM",
+      "response": "Monitor progress, don't over-help with trades"
+    },
+    "struggling": {
+      "indicators": ["under_4_vp", "poor_production", "blocked_frequently"],
+      "threat": "LOW",
+      "response": "Can trade with them, don't waste robber on them"
+    }
+  },
+
+  "resource_intelligence": {
+    "card_count_tracking": {
+      "description": "Track opponent hand sizes for robber targeting",
+      "thresholds": {
+        "many_cards": 8,
+        "normal": 4,
+        "few": 2
+      }
+    },
+    "production_tracking": {
+      "description": "What resources opponents likely have based on dice rolls",
+      "use_for": "Trade evaluation and robber placement"
+    }
+  },
+
+  "threat_assessment": {
+    "CRITICAL": {
+      "indicators": ["8_plus_vp", "longest_road_or_army", "strong_production"],
+      "response": "Block immediately with robber, refuse trades"
+    },
+    "HIGH": {
+      "indicators": ["6_7_vp", "close_to_special_cards", "good_expansion"],
+      "response": "Contest their bonuses, selective blocking"
+    },
+    "MEDIUM": {
+      "indicators": ["4_5_vp", "steady_progress"],
+      "response": "Monitor, fair trades OK"
+    },
+    "LOW": {
+      "indicators": ["under_4_vp", "poor_position"],
+      "response": "Can help with trades, focus on others"
+    }
+  }
+}

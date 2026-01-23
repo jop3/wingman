@@ -1,0 +1,25 @@
+# Extracted archives (development only)
+extracted_files/
+extracted_files_1/
+extracted_files_2/
+
+# Original archives
+*.zip
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if adding later)
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+build/

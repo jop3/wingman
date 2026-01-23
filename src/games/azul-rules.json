@@ -1,0 +1,320 @@
+{
+  "gameId": "azul",
+  "gameName": "Azul",
+  "version": "1.0.0",
+
+  "constants": {
+    "pattern_line_sizes": [1, 2, 3, 4, 5],
+    "floor_penalties": [-1, -1, -2, -2, -2, -3, -3],
+    "wall_size": 5,
+    "tiles_per_factory": 4,
+    "bonus_complete_row": 2,
+    "bonus_complete_column": 7,
+    "bonus_complete_color": 10
+  },
+
+  "trackers": {
+    "current_round": {
+      "type": "counter",
+      "initial": 1,
+      "description": "Current round"
+    },
+    "my_score": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Current score"
+    },
+    "completed_rows": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Completed wall rows"
+    },
+    "completed_columns": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Completed wall columns"
+    },
+    "completed_colors": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Completed color sets (all 5 of one color)"
+    },
+    "floor_tiles": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Tiles on floor line"
+    }
+  },
+
+  "rules": [
+    {
+      "id": "avoid_first_player_penalty",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "centerPool.hasFirstPlayer": { "equals": true } },
+          { "centerPool.tiles": { "lessThan": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "avoid_center",
+        "message": "Avoid taking from center first - you'll get the -1 first player tile!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "complete_row_priority",
+      "priority": 95,
+      "conditions": {
+        "and": [
+          { "patternLine.canComplete": { "equals": true } },
+          { "wall.rowNearComplete": { "greaterThanOrEqual": 4 } }
+        ]
+      },
+      "action": {
+        "recommend": "complete_row",
+        "message": "PRIORITY: Complete this row for +2 bonus points!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "column_bonus_setup",
+      "priority": 88,
+      "conditions": {
+        "and": [
+          { "wall.columnProgress": { "greaterThanOrEqual": 3 } },
+          { "available_tile.completes_column": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "work_on_column",
+        "message": "Work towards column completion - +7 bonus points!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "color_set_bonus",
+      "priority": 90,
+      "conditions": {
+        "and": [
+          { "wall.colorProgress": { "greaterThanOrEqual": 4 } },
+          { "available_tile.completes_color": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "complete_color",
+        "message": "Complete this color set for +10 bonus points!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "avoid_floor_overflow",
+      "priority": 92,
+      "conditions": {
+        "tracker.floor_tiles.value": { "greaterThanOrEqual": 5 }
+      },
+      "action": {
+        "recommend": "minimize_floor",
+        "message": "WARNING: Floor line nearly full! Avoid taking tiles you can't place.",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "efficient_pattern_line",
+      "priority": 75,
+      "conditions": {
+        "and": [
+          { "patternLine.empty": { "equals": true } },
+          { "factory.exactMatch": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "exact_match",
+        "message": "Perfect match! Take these tiles to fill pattern line exactly.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "block_opponent_color",
+      "priority": 80,
+      "conditions": {
+        "and": [
+          { "opponent.needs_color": { "equals": true } },
+          { "opponent.near_bonus": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "block_color",
+        "message": "Consider blocking - opponent needs this color for a bonus!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "large_center_opportunity",
+      "priority": 78,
+      "conditions": {
+        "and": [
+          { "centerPool.sameColor": { "greaterThanOrEqual": 4 } },
+          { "patternLine.canFit": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "take_center",
+        "message": "Large color group in center - worth taking even with first player tile!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "small_pattern_line_early",
+      "priority": 65,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "lessThanOrEqual": 2 } },
+          { "patternLine.size": { "lessThanOrEqual": 2 } },
+          { "patternLine.empty": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "fill_small_lines",
+        "message": "Early game: Fill small pattern lines for quick wall placement.",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "endgame_row_completion",
+      "priority": 98,
+      "conditions": {
+        "and": [
+          { "wall.anyRowComplete": { "equals": false } },
+          { "tracker.current_round.value": { "greaterThanOrEqual": 4 } }
+        ]
+      },
+      "action": {
+        "recommend": "rush_row",
+        "message": "ENDGAME: Focus on completing a row to trigger game end!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "wall_adjacency_bonus",
+      "priority": 72,
+      "conditions": {
+        "and": [
+          { "wall.hasAdjacentTiles": { "equals": true } },
+          { "newTile.adjacentCount": { "greaterThan": 1 } }
+        ]
+      },
+      "action": {
+        "recommend": "maximize_adjacency",
+        "message": "Place here for adjacency bonus - more connected tiles = more points!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "deny_last_factory",
+      "priority": 82,
+      "conditions": {
+        "and": [
+          { "factories.remaining": { "equals": 1 } },
+          { "opponent.needsColor": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "deny_factory",
+        "message": "Last factory! Take to deny opponent their needed color.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "avoid_wasted_tiles",
+      "priority": 88,
+      "conditions": {
+        "and": [
+          { "take.wouldOverflow": { "equals": true } },
+          { "take.overflowCount": { "greaterThan": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "avoid_overflow",
+        "message": "Too many tiles would go to floor! Find a better option.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "strategic_first_player",
+      "priority": 70,
+      "conditions": {
+        "and": [
+          { "centerPool.hasFirstPlayer": { "equals": true } },
+          { "centerPool.goodColor": { "greaterThanOrEqual": 3 } },
+          { "nextRound.goFirstBeneficial": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "take_first_player",
+        "message": "Worth taking first player here - good tiles + going first next round helps.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "diversify_early",
+      "priority": 60,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "equals": 1 } },
+          { "wall.colorsStarted": { "lessThan": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "diversify_colors",
+        "message": "Round 1: Start multiple colors to keep options open.",
+        "alertLevel": "low"
+      }
+    }
+  ],
+
+  "scoringGuide": {
+    "tile_placement": "1 point per tile + 1 per adjacent tile in row/column",
+    "complete_row": "+2 bonus (end of game)",
+    "complete_column": "+7 bonus (end of game)",
+    "complete_color": "+10 bonus (all 5 of one color on wall)",
+    "floor_penalties": "[-1, -1, -2, -2, -2, -3, -3] for positions 1-7"
+  },
+
+  "commonMistakes": [
+    {
+      "mistake": "Taking first player tile for few tiles",
+      "why_bad": "The -1 penalty often isn't worth 1-2 tiles",
+      "fix": "Only take from center when getting 3+ useful tiles"
+    },
+    {
+      "mistake": "Ignoring column and color bonuses",
+      "why_bad": "Missing +7 and +10 point bonuses",
+      "fix": "Plan ahead for vertical and color completion"
+    },
+    {
+      "mistake": "Overflowing pattern lines",
+      "why_bad": "Excess tiles go to floor causing penalties",
+      "fix": "Count tiles carefully before taking"
+    },
+    {
+      "mistake": "Not blocking opponents near bonuses",
+      "why_bad": "Letting them score big bonuses",
+      "fix": "Watch opponent walls and deny crucial colors"
+    }
+  ]
+}

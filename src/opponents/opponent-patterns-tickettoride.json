@@ -1,0 +1,392 @@
+{
+  "gameId": "tickettoride",
+  "gameName": "Ticket to Ride - Opponent Analysis",
+  
+  "detectors": {
+    "draws_specific_colors": {
+      "type": "frequency",
+      "sample_size": 10,
+      "match": { "actionType": "draw_visible_card" },
+      "description": "Hur ofta drar de synliga kort (avslöjar färgbehov)"
+    },
+    "long_route_focus": {
+      "type": "frequency",
+      "sample_size": 8,
+      "match": { "actionType": "claim_route", "routeLength": ">= 5" },
+      "description": "Frekvens av långa rutter (5+ tåg)"
+    },
+    "blocking_behavior": {
+      "type": "frequency",
+      "sample_size": 10,
+      "match": { "actionType": "claim_route", "strategic_block": true },
+      "description": "Bygger de rutter främst för att blockera?"
+    },
+    "destination_draw_timing": {
+      "type": "average",
+      "field": "trains_remaining_when_drew",
+      "description": "När drar de nya destinations (tidigt vs sent)"
+    },
+    "card_hoarding": {
+      "type": "trend",
+      "metric": "hand_size",
+      "description": "Trend för handstorlek över tid"
+    },
+    "route_efficiency": {
+      "type": "ratio",
+      "numerator": { "actionType": "claim_route", "routeLength": ">= 4" },
+      "denominator": { "actionType": "claim_route" },
+      "description": "Ratio av effektiva rutter (4+ tåg)"
+    },
+    "color_commitment": {
+      "type": "sequence",
+      "sequence": [
+        { "actionType": "draw_card", "color": "red" },
+        { "actionType": "draw_card", "color": "red" },
+        { "actionType": "draw_card", "color": "red" }
+      ],
+      "description": "Samlar de konsekvent samma färg?"
+    },
+    "aggressive_endgame": {
+      "type": "frequency",
+      "sample_size": 5,
+      "match": { "trains_remaining": "<= 10", "actionType": "claim_route" },
+      "description": "Bygger de aggressivt när få tåg återstår?"
+    }
+  },
+
+  "strategies": {
+    "longest_route_hunter": {
+      "name": "Längsta Rutt-jägare",
+      "description": "Fokuserar på att bygga längsta möjliga kontinuerliga rutt",
+      "indicators": [
+        {
+          "pattern": "long_route_focus",
+          "weight": 3,
+          "threshold": { "min": 0.5 }
+        },
+        {
+          "pattern": "route_efficiency",
+          "weight": 2,
+          "threshold": { "min": 0.6 }
+        },
+        {
+          "pattern": "destination_draw_timing",
+          "weight": 1,
+          "threshold": { "min": 30 },
+          "note": "Drar destinations tidigt för att planera lång rutt"
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "claim_long_central_routes",
+          "probability": 0.8,
+          "reasoning": "Bygger långa rutter genom kartans centrum"
+        },
+        {
+          "action": "connect_existing_routes",
+          "probability": 0.7,
+          "reasoning": "Förlänger befintliga rutter istället för nya grenar"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "block_central_routes",
+          "priority": 80,
+          "description": "Blockera långa centrala rutter tidigt",
+          "timing": "early_game"
+        },
+        {
+          "action": "force_branching",
+          "priority": 70,
+          "description": "Tvinga dem att förgrena sig istället för en lång linje",
+          "timing": "mid_game"
+        }
+      ],
+      "weaknesses": [
+        "Sårbar för strategisk blockering",
+        "Ofta dålig på att slutföra destinations",
+        "Kan bli fast om huvudrutt blockeras"
+      ]
+    },
+
+    "ticket_completionist": {
+      "name": "Destination-kompletterare",
+      "description": "Fokuserar på att slutföra många destinations effektivt",
+      "indicators": [
+        {
+          "pattern": "draws_specific_colors",
+          "weight": 2,
+          "threshold": { "max": 0.3 },
+          "note": "Drar ofta blint för att inte avslöja färger"
+        },
+        {
+          "pattern": "route_efficiency",
+          "weight": 3,
+          "threshold": { "min": 0.5 }
+        },
+        {
+          "pattern": "destination_draw_timing",
+          "weight": 2,
+          "threshold": { "max": 25 },
+          "note": "Drar destinations tidigt och ofta"
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "claim_overlapping_routes",
+          "probability": 0.9,
+          "reasoning": "Bygger rutter som hjälper flera destinations"
+        },
+        {
+          "action": "draw_new_destinations",
+          "probability": 0.6,
+          "reasoning": "Drar nya destinations om de passar nätverket"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "block_key_cities",
+          "priority": 85,
+          "description": "Blockera städer som förekommer i många destinations",
+          "cities": ["Chicago", "Denver", "New York", "Los Angeles"]
+        },
+        {
+          "action": "force_long_detours",
+          "priority": 75,
+          "description": "Blockera direkta vägar, tvinga dem ta långa omvägar"
+        }
+      ],
+      "weaknesses": [
+        "Tenderar att undvika längsta rutt-bonusen",
+        "Kan fastna med omöjliga destinations sent i spelet",
+        "Sårbar för blockering av nyckelpunkter"
+      ]
+    },
+
+    "aggressive_blocker": {
+      "name": "Aggressiv Blockerare",
+      "description": "Fokuserar på att störa motståndarnas planer",
+      "indicators": [
+        {
+          "pattern": "blocking_behavior",
+          "weight": 4,
+          "threshold": { "min": 0.4 }
+        },
+        {
+          "pattern": "draws_specific_colors",
+          "weight": 2,
+          "threshold": { "min": 0.5 },
+          "note": "Observerar andras färger och tar dem"
+        },
+        {
+          "pattern": "route_efficiency",
+          "weight": 1,
+          "threshold": { "max": 0.5 },
+          "note": "Bygger korta rutter för att blockera"
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "claim_bottleneck_routes",
+          "probability": 0.9,
+          "reasoning": "Prioriterar flaskhalsar som Las Vegas, Phoenix"
+        },
+        {
+          "action": "mirror_opponent_colors",
+          "probability": 0.7,
+          "reasoning": "Samlar färger som andra behöver"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "build_alternative_routes",
+          "priority": 70,
+          "description": "Ha alltid backup-rutter planerade"
+        },
+        {
+          "action": "hide_intentions",
+          "priority": 80,
+          "description": "Dra blint, bygg oförutsägbart"
+        },
+        {
+          "action": "use_stations_europe",
+          "priority": 60,
+          "description": "Spara stationer för blockerade rutter (Europe)",
+          "variant": "europe"
+        }
+      ],
+      "weaknesses": [
+        "Ofta dåliga poäng själva",
+        "Kan slösa resurser på ineffektiv blockering",
+        "Sårbar om flera spelare ignorerar dem"
+      ]
+    },
+
+    "rush_ender": {
+      "name": "Snabb Avslutare",
+      "description": "Siktar på att avsluta spelet snabbt och överraska",
+      "indicators": [
+        {
+          "pattern": "aggressive_endgame",
+          "weight": 4,
+          "threshold": { "min": 0.6 }
+        },
+        {
+          "pattern": "card_hoarding",
+          "weight": 2,
+          "threshold": { "equals": "increasing" }
+        },
+        {
+          "pattern": "long_route_focus",
+          "weight": 2,
+          "threshold": { "min": 0.4 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "sudden_burst_building",
+          "probability": 0.85,
+          "reasoning": "Hamstrar kort, sen bygger 2-3 långa rutter snabbt"
+        },
+        {
+          "action": "trigger_at_14_trains",
+          "probability": 0.7,
+          "reasoning": "Triggar endgame vid ~12-14 tåg kvar"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "monitor_train_count",
+          "priority": 90,
+          "description": "Räkna deras tåg konstant - när de når 15-20, var redo"
+        },
+        {
+          "action": "complete_destinations_early",
+          "priority": 85,
+          "description": "Ha inga ofullständiga destinations när de har 20 tåg"
+        },
+        {
+          "action": "trigger_first",
+          "priority": 75,
+          "description": "Överväg att trigga endgame själv om du leder"
+        }
+      ],
+      "weaknesses": [
+        "Risk för ofullständiga destinations",
+        "Om blockerad under burst-fasen, förlorar de lätt",
+        "Förutsägbar timing"
+      ]
+    },
+
+    "balanced_optimizer": {
+      "name": "Balanserad Optimerare",
+      "description": "Spelar säkert, balanserar destinations och ruttpoäng",
+      "indicators": [
+        {
+          "pattern": "route_efficiency",
+          "weight": 2,
+          "threshold": { "min": 0.5, "max": 0.8 }
+        },
+        {
+          "pattern": "blocking_behavior",
+          "weight": 1,
+          "threshold": { "max": 0.3 }
+        },
+        {
+          "pattern": "destination_draw_timing",
+          "weight": 2,
+          "threshold": { "min": 20, "max": 35 }
+        }
+      ],
+      "predictedBehaviors": [
+        {
+          "action": "steady_progress",
+          "probability": 0.8,
+          "reasoning": "Bygger konsekvent utan plötsliga förändringar"
+        },
+        {
+          "action": "low_risk_destinations",
+          "probability": 0.7,
+          "reasoning": "Väljer destinations de kan slutföra säkert"
+        }
+      ],
+      "counterStrategies": [
+        {
+          "action": "apply_pressure",
+          "priority": 65,
+          "description": "Tvinga dem till snabba beslut, de gillar inte press"
+        },
+        {
+          "action": "out_optimize",
+          "priority": 70,
+          "description": "De spelar för säkert - ta kalkulerade risker för högre poäng"
+        }
+      ],
+      "weaknesses": [
+        "Undviker högrisk-högbelöning-situationer",
+        "Kan vara för konservativa",
+        "Sårbar för aggressiva rush-strategier"
+      ]
+    }
+  },
+
+  "threatAssessment": [
+    {
+      "strategy": "rush_ender",
+      "conditions": {
+        "aggressive_endgame": { "min": 0.6 }
+      },
+      "level": "critical",
+      "reasoning": "Kan avsluta spelet när som helst"
+    },
+    {
+      "strategy": "longest_route_hunter",
+      "conditions": {
+        "long_route_focus": { "min": 0.7 }
+      },
+      "level": "high",
+      "reasoning": "Tar troligen längsta rutt-bonusen"
+    },
+    {
+      "strategy": "aggressive_blocker",
+      "conditions": {
+        "blocking_behavior": { "min": 0.5 }
+      },
+      "level": "high",
+      "reasoning": "Kan förstöra din strategi"
+    },
+    {
+      "strategy": "ticket_completionist",
+      "level": "medium",
+      "reasoning": "Konsekvent men förutsägbar"
+    },
+    {
+      "strategy": "balanced_optimizer",
+      "level": "low",
+      "reasoning": "Säker spelstil, lägre threat"
+    }
+  ],
+
+  "inferenceRules": {
+    "color_targeting": {
+      "description": "Vilka rutter siktar de på baserat på färger de samlar?",
+      "patterns": [
+        {
+          "colors": ["red", "red", "red"],
+          "likely_routes": ["Vancouver-Montreal", "Los Angeles-Chicago", "Portland-Nashville"],
+          "confidence": 0.7
+        },
+        {
+          "colors": ["blue", "blue"],
+          "likely_routes": ["Seattle-New York", "Vancouver-Santa Fe"],
+          "confidence": 0.6
+        }
+      ]
+    },
+    "critical_cities": {
+      "description": "Vilka städer är kritiska baserat på deras byggande?",
+      "high_value": ["Chicago", "Denver", "New York", "Los Angeles"],
+      "bottlenecks": ["Las Vegas", "Phoenix", "Calgary", "Winnipeg"]
+    }
+  }
+}

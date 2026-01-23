@@ -1,0 +1,205 @@
+{
+  "gameId": "smallworld",
+  "version": "1.0.0",
+
+  "detectors": {
+    "aggressive_conquerer": {
+      "description": "Constantly attacking and expanding",
+      "signals": [
+        { "pattern": "attacks_every_turn", "weight": 0.9 },
+        { "pattern": "targets_player_regions", "weight": 0.8 },
+        { "pattern": "high_conquest_count", "weight": 0.7 }
+      ],
+      "threshold": 0.7
+    },
+    "decline_cycler": {
+      "description": "Frequently switches races for optimal combos",
+      "signals": [
+        { "pattern": "early_decline", "weight": 0.8 },
+        { "pattern": "multiple_races_used", "weight": 0.9 },
+        { "pattern": "efficient_race_selection", "weight": 0.7 }
+      ],
+      "threshold": 0.7
+    },
+    "turtle_defender": {
+      "description": "Focuses on holding defensible positions",
+      "signals": [
+        { "pattern": "holds_mountains", "weight": 0.8 },
+        { "pattern": "minimal_expansion", "weight": 0.7 },
+        { "pattern": "high_token_density", "weight": 0.9 }
+      ],
+      "threshold": 0.7
+    },
+    "opportunist": {
+      "description": "Attacks weak targets and avoids conflict",
+      "signals": [
+        { "pattern": "targets_decline_tokens", "weight": 0.9 },
+        { "pattern": "avoids_strong_players", "weight": 0.8 },
+        { "pattern": "takes_undefended_regions", "weight": 0.7 }
+      ],
+      "threshold": 0.65
+    },
+    "power_synergist": {
+      "description": "Maximizes race/power combo effectiveness",
+      "signals": [
+        { "pattern": "targets_bonus_terrain", "weight": 0.9 },
+        { "pattern": "uses_special_abilities", "weight": 0.8 },
+        { "pattern": "strategic_race_picks", "weight": 0.8 }
+      ],
+      "threshold": 0.7
+    }
+  },
+
+  "strategies": {
+    "aggression": {
+      "name": "Aggressive Conquerer",
+      "description": "Constantly attacking to deny opponent scoring",
+      "detectors": ["aggressive_conquerer"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "fortify_and_spread",
+        "message": "Opponent aggressive - spread thin and let them waste tokens attacking!",
+        "priority": 85
+      }
+    },
+    "race_cycling": {
+      "name": "Decline Cycler",
+      "description": "Maximizing value through frequent race changes",
+      "detectors": ["decline_cycler"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "attack_decline_tokens",
+        "message": "Opponent cycling races - attack their decline tokens for easy points!",
+        "priority": 80
+      }
+    },
+    "defensive": {
+      "name": "Turtle Defender",
+      "description": "Holding strong positions with stacked tokens",
+      "detectors": ["turtle_defender"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "expand_elsewhere",
+        "message": "Opponent turtling - expand in areas they're not defending.",
+        "priority": 70
+      }
+    },
+    "opportunistic": {
+      "name": "Opportunist",
+      "description": "Taking easy targets and avoiding conflict",
+      "detectors": ["opportunist"],
+      "threat_level": "MEDIUM",
+      "counter_strategy": {
+        "action": "protect_weak_spots",
+        "message": "Opponent opportunistic - don't leave regions undefended.",
+        "priority": 75
+      }
+    },
+    "synergy_focus": {
+      "name": "Power Synergist",
+      "description": "Maximizing race/power combo bonuses",
+      "detectors": ["power_synergist"],
+      "threat_level": "HIGH",
+      "counter_strategy": {
+        "action": "deny_bonus_terrain",
+        "message": "Opponent exploiting synergies - contest their bonus terrain!",
+        "priority": 82
+      }
+    }
+  },
+
+  "race_threat_assessment": {
+    "amazons": {
+      "threat": "HIGH",
+      "reason": "+4 conquest tokens makes them very aggressive",
+      "counter": "They're weak in redeployment - attack after they spread"
+    },
+    "skeletons": {
+      "threat": "HIGH",
+      "reason": "Grow stronger by conquering occupied regions",
+      "counter": "Leave regions empty - deny them bonus tokens"
+    },
+    "elves": {
+      "threat": "MEDIUM",
+      "reason": "Never lose tokens, hard to push back",
+      "counter": "Focus elsewhere rather than attacking them"
+    },
+    "dwarves": {
+      "threat": "MEDIUM",
+      "reason": "Bonus for mine regions",
+      "counter": "Contest mine regions early"
+    },
+    "orcs": {
+      "threat": "HIGH",
+      "reason": "Bonus coins for conquering non-empty regions",
+      "counter": "Abandon regions they're targeting"
+    },
+    "trolls": {
+      "threat": "MEDIUM",
+      "reason": "Lair tokens add permanent defense",
+      "counter": "Attack before they establish lairs"
+    },
+    "wizards": {
+      "threat": "MEDIUM",
+      "reason": "Bonus from magic regions",
+      "counter": "Contest magic regions"
+    },
+    "giants": {
+      "threat": "LOW",
+      "reason": "Need adjacent mountains for bonus",
+      "counter": "Take mountain-adjacent regions first"
+    }
+  },
+
+  "power_threat_assessment": {
+    "flying": {
+      "threat": "HIGH",
+      "reason": "Can attack anywhere on the map",
+      "counter": "No safe regions - maximize defense"
+    },
+    "mounted": {
+      "threat": "MEDIUM",
+      "reason": "Cheaper conquest of hills and farmlands",
+      "counter": "Avoid those terrain types"
+    },
+    "underworld": {
+      "threat": "MEDIUM",
+      "reason": "Caverns act as adjacent",
+      "counter": "Contest cavern regions"
+    },
+    "commando": {
+      "threat": "HIGH",
+      "reason": "-1 to conquer all regions",
+      "counter": "Extra defense needed everywhere"
+    },
+    "diplomat": {
+      "threat": "LOW",
+      "reason": "Peace with one opponent",
+      "counter": "Try to be the peace target"
+    },
+    "heroic": {
+      "threat": "MEDIUM",
+      "reason": "Immune heroes on two regions",
+      "counter": "Attack other regions"
+    }
+  },
+
+  "threat_assessment": {
+    "CRITICAL": {
+      "indicators": ["10_plus_regions", "strong_race_power_combo", "many_bonus_regions"],
+      "response": "Coordinate attacks with other players"
+    },
+    "HIGH": {
+      "indicators": ["7_plus_regions", "aggressive_expansion", "bonus_exploitation"],
+      "response": "Target their weak spots actively"
+    },
+    "MEDIUM": {
+      "indicators": ["moderate_regions", "steady_scoring"],
+      "response": "Monitor and compete for resources"
+    },
+    "LOW": {
+      "indicators": ["few_regions", "in_decline", "poor_race_choice"],
+      "response": "Focus on own strategy"
+    }
+  }
+}

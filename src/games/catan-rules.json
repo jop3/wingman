@@ -1,0 +1,342 @@
+{
+  "gameId": "catan",
+  "gameName": "Settlers of Catan",
+  "version": "1.0.0",
+
+  "constants": {
+    "victory_points_to_win": 10,
+    "max_settlements": 5,
+    "max_cities": 4,
+    "max_roads": 15,
+    "robber_trigger": 7,
+    "max_hand_on_seven": 7
+  },
+
+  "trackers": {
+    "victory_points": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Current visible victory points"
+    },
+    "settlements_built": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Settlements on board"
+    },
+    "cities_built": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Cities on board"
+    },
+    "total_resources": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Total cards in hand"
+    }
+  },
+
+  "rules": [
+    {
+      "id": "setup_placement",
+      "priority": 100,
+      "conditions": {
+        "phase": { "equals": "setup" }
+      },
+      "action": {
+        "recommend": "optimal_placement",
+        "message": "Initial placement: prioritize diverse numbers (6,8,5,9,4,10) and ore+wheat access!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "robber_warning",
+      "priority": 95,
+      "conditions": {
+        "tracker.total_resources.value": { "greaterThan": 7 }
+      },
+      "action": {
+        "recommend": "reduce_hand",
+        "message": "WARNING: You have more than 7 cards - a 7 roll means losing half!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "build_settlement",
+      "priority": 90,
+      "conditions": {
+        "and": [
+          { "can_build.settlement": { "equals": true } },
+          { "tracker.settlements_built.value": { "lessThan": 5 } }
+        ]
+      },
+      "action": {
+        "recommend": "build_settlement",
+        "message": "You can build a settlement! Each one is 1 VP plus resource production.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "upgrade_to_city",
+      "priority": 88,
+      "conditions": {
+        "and": [
+          { "can_build.city": { "equals": true } },
+          { "tracker.settlements_built.value": { "greaterThan": 0 } }
+        ]
+      },
+      "action": {
+        "recommend": "upgrade_city",
+        "message": "You can upgrade to a city! 2 VP and doubles resource production.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "longest_road_chase",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "opponent.has_longest_road": { "equals": true } },
+          { "road_difference": { "lessThanOrEqual": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "build_roads",
+        "message": "Close to longest road! Consider building roads to claim/steal it.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "largest_army_chase",
+      "priority": 84,
+      "conditions": {
+        "and": [
+          { "opponent.has_largest_army": { "equals": true } },
+          { "knight_difference": { "lessThanOrEqual": 1 } },
+          { "has_knight_card": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "play_knight",
+        "message": "Close to largest army! Play knights to claim 2 VP.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "buy_dev_card",
+      "priority": 75,
+      "conditions": {
+        "and": [
+          { "can_build.devCard": { "equals": true } },
+          { "phase": { "equals": "build" } }
+        ]
+      },
+      "action": {
+        "recommend": "buy_development",
+        "message": "Consider buying a development card for knights or victory points!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "trade_opportunity",
+      "priority": 70,
+      "conditions": {
+        "and": [
+          { "phase": { "equals": "trade" } },
+          { "resource_surplus": { "greaterThan": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "trade_resources",
+        "message": "You have surplus resources - trade with other players or bank.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "harbor_trade",
+      "priority": 72,
+      "conditions": {
+        "and": [
+          { "has_harbor": { "equals": true } },
+          { "matching_resource_surplus": { "greaterThanOrEqual": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "use_harbor",
+        "message": "Use your harbor for efficient 2:1 or 3:1 trades!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "robber_placement",
+      "priority": 92,
+      "conditions": {
+        "phase": { "equals": "robber" }
+      },
+      "action": {
+        "recommend": "block_leader",
+        "message": "Place robber on the leader's best hex, or one producing their needed resource!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "road_expansion",
+      "priority": 65,
+      "conditions": {
+        "and": [
+          { "can_build.road": { "equals": true } },
+          { "good_settlement_spot_reachable": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "expand_roads",
+        "message": "Build roads toward valuable settlement locations.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "ore_wheat_focus",
+      "priority": 80,
+      "conditions": {
+        "and": [
+          { "resources.ore": { "lessThan": 2 } },
+          { "resources.grain": { "lessThan": 2 } },
+          { "tracker.cities_built.value": { "lessThan": 2 } }
+        ]
+      },
+      "action": {
+        "recommend": "acquire_ore_wheat",
+        "message": "Prioritize getting ore and wheat - needed for cities and dev cards!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "block_opponent_expansion",
+      "priority": 78,
+      "conditions": {
+        "and": [
+          { "opponent.approaching_key_spot": { "equals": true } },
+          { "can_build.settlement": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "block_spot",
+        "message": "Opponent heading to a key spot - consider blocking with your settlement!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "endgame_push",
+      "priority": 95,
+      "conditions": {
+        "tracker.victory_points.value": { "greaterThanOrEqual": 8 }
+      },
+      "action": {
+        "recommend": "push_for_win",
+        "message": "Close to victory! Focus on the fastest path to 10 VP.",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "monopoly_opportunity",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "has_monopoly_card": { "equals": true } },
+          { "opponents.resource_concentration": { "greaterThan": 4 } }
+        ]
+      },
+      "action": {
+        "recommend": "play_monopoly",
+        "message": "Good monopoly opportunity! Opponents have concentrated resources.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "road_building_card",
+      "priority": 82,
+      "conditions": {
+        "and": [
+          { "has_road_building_card": { "equals": true } },
+          { "longest_road_achievable": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "play_road_building",
+        "message": "Road building card can help claim longest road!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "year_of_plenty",
+      "priority": 78,
+      "conditions": {
+        "and": [
+          { "has_year_of_plenty_card": { "equals": true } },
+          { "close_to_build": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "play_year_of_plenty",
+        "message": "Year of Plenty can get you the resources you need to build!",
+        "alertLevel": "medium"
+      }
+    }
+  ],
+
+  "scoringGuide": {
+    "settlements": "1 VP each (max 5)",
+    "cities": "2 VP each (max 4)",
+    "longest_road": "2 VP for 5+ connected roads",
+    "largest_army": "2 VP for 3+ knights played",
+    "victory_point_cards": "1 VP each (hidden until winning)"
+  },
+
+  "commonMistakes": [
+    {
+      "mistake": "Ignoring ore and wheat production",
+      "why_bad": "Cannot build cities or buy dev cards efficiently",
+      "fix": "In setup, ensure access to ore and wheat numbers"
+    },
+    {
+      "mistake": "Holding too many cards",
+      "why_bad": "Lose half on a 7 roll",
+      "fix": "Build or trade when you have 7+ cards"
+    },
+    {
+      "mistake": "Building roads without purpose",
+      "why_bad": "Wastes brick and lumber that could be settlements",
+      "fix": "Only build roads toward settlement spots or for longest road"
+    },
+    {
+      "mistake": "Ignoring the robber",
+      "why_bad": "Blocked hex produces nothing",
+      "fix": "Use knights to move robber, or trade for what blocked hex produced"
+    },
+    {
+      "mistake": "Not competing for longest road/largest army",
+      "why_bad": "4 VP from these achievements is significant",
+      "fix": "Track opponent progress and contest if close"
+    },
+    {
+      "mistake": "Building settlements over cities",
+      "why_bad": "Cities give 2 VP and double resources",
+      "fix": "Once you have good settlements, prioritize upgrading to cities"
+    }
+  ]
+}

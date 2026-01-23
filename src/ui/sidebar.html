@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wingman</title>
+</head>
+<body>
+  <div class="bga-assistant-container">
+    <!-- Toggle Button -->
+    <button class="toggle-btn" title="Toggle Wingman (Alt+B)">
+      <span class="icon">W</span>
+    </button>
+
+    <!-- Main Content -->
+    <div class="sidebar-content">
+      <!-- Header -->
+      <div class="sidebar-header">
+        <h2>Wingman</h2>
+        <div class="status ready">Ready</div>
+      </div>
+
+      <!-- Game Info -->
+      <div class="game-info">
+        <div class="info-row">
+          <span class="label">Game:</span>
+          <span class="value game-name">-</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Variant:</span>
+          <span class="value variant-name">-</span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="recommendations">
+          Tips
+        </button>
+        <button class="tab" data-tab="opponents">
+          Opponents
+        </button>
+        <button class="tab" data-tab="stats">
+          Stats
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tab-content">
+        <!-- Recommendations Tab -->
+        <div class="tab-panel active" data-panel="recommendations">
+          <div class="recommendations">
+            <div class="empty-state">
+              <p>No recommendations yet.</p>
+              <p class="hint">Waiting for your turn...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opponents Tab -->
+        <div class="tab-panel" data-panel="opponents">
+          <div class="opponents">
+            <div class="empty-state">
+              <p>No opponents tracked yet.</p>
+              <p class="hint">Analyzing player moves...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Tab -->
+        <div class="tab-panel" data-panel="stats">
+          <div class="stats">
+            <div class="stat-item">
+              <span class="stat-label">Recommendations:</span>
+              <span class="stat-value" id="total-recs">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Opponents analyzed:</span>
+              <span class="stat-value" id="total-opponents">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Confidence:</span>
+              <span class="stat-value" id="avg-confidence">-</span>
+            </div>
+          </div>
+
+          <!-- Training Mode Controls -->
+          <div class="training-controls" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div class="stat-item">
+              <span class="stat-label">Training Mode:</span>
+              <span class="stat-value" id="training-status">OFF</span>
+            </div>
+            <p class="hint" style="font-size: 11px; color: #666; margin-top: 8px;">
+              Alt+T to toggle | Alt+D to download data
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="sidebar-footer">
+        <button class="settings-btn" title="Settings">⚙️</button>
+        <span class="version">v1.0.0</span>
+        <button class="help-btn" title="Help">❓</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+
+        // Update active tab
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        // Show corresponding panel
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+          panel.classList.toggle('active', panel.dataset.panel === tabName);
+        });
+      });
+    });
+
+    // Settings button - open popup instead (no options page defined)
+    document.querySelector('.settings-btn')?.addEventListener('click', () => {
+      alert('Settings:\n\nUse the extension popup (click the Wingman icon in toolbar) to configure settings.\n\nOr use keyboard shortcuts:\n- Alt+T: Toggle training mode');
+    });
+
+    // Help button
+    document.querySelector('.help-btn')?.addEventListener('click', () => {
+      alert('Wingman v1.0.0\n\nKeyboard Shortcuts:\n- Alt+B: Toggle sidebar\n- Alt+T: Toggle training mode\n- Alt+D: Download training data\n\nSupported Games:\n- Wingspan\n- Sushi Go\n- Ticket to Ride');
+    });
+  </script>
+</body>
+</html>

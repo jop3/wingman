@@ -1,0 +1,298 @@
+{
+  "gameId": "bunnykingdom",
+  "gameName": "Bunny Kingdom",
+  "version": "1.0.0",
+
+  "constants": {
+    "total_rounds": 4,
+    "cards_per_round": 10,
+    "grid_size": "10x10",
+    "max_city_level": 3,
+    "fief_score_formula": "towers * unique_resources"
+  },
+
+  "trackers": {
+    "current_round": {
+      "type": "counter",
+      "initial": 1,
+      "description": "Current round (1-4)"
+    },
+    "total_territories": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Number of territories owned"
+    },
+    "total_fiefs": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Number of connected territory groups"
+    },
+    "total_towers": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Sum of all city tower levels"
+    },
+    "unique_resources": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Different resource types controlled"
+    },
+    "parchment_count": {
+      "type": "counter",
+      "initial": 0,
+      "description": "Secret objective cards held"
+    }
+  },
+
+  "rules": [
+    {
+      "id": "connect_territories",
+      "priority": 95,
+      "conditions": {
+        "and": [
+          { "available_card.is_territory": { "equals": true } },
+          { "card.adjacent_to_owned": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "expand_fief",
+        "message": "PRIORITY: Take this territory to expand your fief and increase scoring!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "city_for_small_fief",
+      "priority": 90,
+      "conditions": {
+        "and": [
+          { "available_card.is_city": { "equals": true } },
+          { "fief.has_resources_but_no_city": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "add_city",
+        "message": "Add a city to your fief with resources - you need towers to score!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "resource_diversity",
+      "priority": 85,
+      "conditions": {
+        "and": [
+          { "available_card.has_new_resource": { "equals": true } },
+          { "fief.has_city": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "get_new_resource",
+        "message": "New resource type! Each unique resource multiplies your tower score.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "sky_tower_opportunity",
+      "priority": 88,
+      "conditions": {
+        "and": [
+          { "available_card.is_sky_tower": { "equals": true } },
+          { "fief.size": { "greaterThanOrEqual": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "take_sky_tower",
+        "message": "Sky Tower available! Place in large fief for massive tower boost.",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "parchment_synergy",
+      "priority": 82,
+      "conditions": {
+        "and": [
+          { "available_card.is_parchment": { "equals": true } },
+          { "parchment.matches_strategy": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "take_parchment",
+        "message": "This parchment matches your board state - good end-game points!",
+        "alertLevel": "high"
+      }
+    },
+
+    {
+      "id": "block_opponent_connection",
+      "priority": 78,
+      "conditions": {
+        "and": [
+          { "available_card.is_territory": { "equals": true } },
+          { "card.would_block_opponent": { "equals": true } },
+          { "opponent.fief_nearly_connected": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "block_territory",
+        "message": "Block this territory to prevent opponent from connecting their fiefs!",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "round_4_scoring",
+      "priority": 100,
+      "conditions": {
+        "tracker.current_round.value": { "equals": 4 }
+      },
+      "action": {
+        "recommend": "maximize_fiefs",
+        "message": "FINAL ROUND: Prioritize completing fiefs and adding resources/towers!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "early_game_expansion",
+      "priority": 70,
+      "conditions": {
+        "and": [
+          { "tracker.current_round.value": { "lessThanOrEqual": 2 } },
+          { "available_card.is_territory": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "claim_territories",
+        "message": "Early game: Claim territories to establish fief foundations.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "avoid_isolated_territory",
+      "priority": 65,
+      "conditions": {
+        "and": [
+          { "available_card.is_territory": { "equals": true } },
+          { "card.adjacent_to_owned": { "equals": false } },
+          { "card.strategic_value": { "lessThan": 5 } }
+        ]
+      },
+      "action": {
+        "recommend": "skip_isolated",
+        "message": "Isolated territory - consider other options unless blocking or strategic.",
+        "alertLevel": "low"
+      }
+    },
+
+    {
+      "id": "farm_for_production",
+      "priority": 72,
+      "conditions": {
+        "and": [
+          { "available_card.is_farm": { "equals": true } },
+          { "fief.needs_resources": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "add_farm",
+        "message": "Farm adds carrot resource to fief - increases score multiplier.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "camp_placement",
+      "priority": 68,
+      "conditions": {
+        "and": [
+          { "available_card.is_camp": { "equals": true } },
+          { "fief.has_camp_synergy": { "equals": true } }
+        ]
+      },
+      "action": {
+        "recommend": "add_camp",
+        "message": "Camp provides flexibility for fief building.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "golden_carrot_priority",
+      "priority": 92,
+      "conditions": {
+        "available_card.has_golden_carrot": { "equals": true }
+      },
+      "action": {
+        "recommend": "take_golden_carrot",
+        "message": "Golden Carrot! Counts as any resource type - very valuable!",
+        "alertLevel": "critical"
+      }
+    },
+
+    {
+      "id": "large_fief_focus",
+      "priority": 75,
+      "conditions": {
+        "and": [
+          { "fief.size": { "greaterThanOrEqual": 5 } },
+          { "fief.towers": { "lessThan": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "upgrade_large_fief",
+        "message": "Large fief needs more towers to maximize score.",
+        "alertLevel": "medium"
+      }
+    },
+
+    {
+      "id": "parchment_collection",
+      "priority": 60,
+      "conditions": {
+        "and": [
+          { "available_card.is_parchment": { "equals": true } },
+          { "tracker.parchment_count.value": { "lessThan": 3 } }
+        ]
+      },
+      "action": {
+        "recommend": "collect_parchment",
+        "message": "Consider parchment for end-game scoring variety.",
+        "alertLevel": "low"
+      }
+    }
+  ],
+
+  "scoringGuide": {
+    "fief_score": "Towers × Unique Resources (per fief)",
+    "parchments": "Scored at end based on conditions",
+    "golden_carrot": "Counts as any resource type",
+    "sky_tower": "Adds significant tower strength"
+  },
+
+  "commonMistakes": [
+    {
+      "mistake": "Building cities without resources",
+      "why_bad": "Towers × 0 resources = 0 points",
+      "fix": "Ensure fiefs have both towers AND resources"
+    },
+    {
+      "mistake": "Too many small disconnected fiefs",
+      "why_bad": "Small fiefs score poorly",
+      "fix": "Focus on connecting territories into larger fiefs"
+    },
+    {
+      "mistake": "Ignoring parchments entirely",
+      "why_bad": "Missing significant end-game points",
+      "fix": "Take 2-3 parchments that match your strategy"
+    },
+    {
+      "mistake": "Not blocking opponent connections",
+      "why_bad": "Letting them build mega-fiefs",
+      "fix": "Watch opponent positions and block key connections"
+    }
+  ]
+}
