@@ -1,0 +1,15 @@
+# .claudeignore — token-saver file filter for Claude Code
+#
+# Files matching these patterns will NOT be read by Claude.
+# Syntax is the same as .gitignore.
+#
+# The hook already blocks common noise (node_modules, lock files, build artifacts,
+# minified files, source maps, generated protobuf, etc.) by default.
+# Add project-specific patterns here.
+#
+# Examples:
+#   large-fixture.json
+#   test/fixtures/**
+#   **/migrations/**
+#   docs/api-reference/**
+#   *.generated.ts

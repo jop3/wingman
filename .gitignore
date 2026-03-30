@@ -23,3 +23,8 @@ package-lock.json
 # Build output
 dist/
 build/
+.claude-secure/
+.claude/
+
+.claude-secure/
+.claude/
